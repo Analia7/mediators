@@ -418,3 +418,203 @@ if __name__ == "__main__":
         t_ab = TRUE[g]['alpha'] * TRUE[g]['beta']
         e_ab = thetas[g]['alpha'] * thetas[g]['beta']
         print(f"  Group {g}: true alpha*beta={t_ab:.3f}  est alpha*beta={e_ab:.3f}")
+
+ 
+# ---------------------------------------------------------------------------
+# Phase 2: inference for a new patient
+# ---------------------------------------------------------------------------
+ 
+def infer_patient(Y, X, theta_0, theta_1):
+    """
+    Given a new patient's observations Y and inputs X, infer:
+      - group assignment j* (hard, no prior)
+      - filtered trajectory z_{t|t} and uncertainty P_{t|t}
+      - smoothed trajectory z_{t|T} and uncertainty P_{t|T}
+ 
+    All outputs are under the winning group's parameters.
+ 
+    Parameters
+    ----------
+    Y, X     : (T,)  observations and inputs for one patient
+    theta_0  : dict  estimated parameters for group 0
+    theta_1  : dict  estimated parameters for group 1
+ 
+    Returns
+    -------
+    result : dict with keys
+        'group'     : int    hard group assignment (0 or 1)
+        'log_liks'  : dict   {'0': ll_0, '1': ll_1}  (useful for confidence)
+        'z_filt'    : (T,)   filtered means   z_{t|t}
+        'P_filt'    : (T,)   filtered variances P_{t|t}
+        'z_smooth'  : (T,)   smoothed means   z_{t|T}
+        'P_smooth'  : (T,)   smoothed variances P_{t|T}
+    """
+    # --- Step 1: run Kalman filter under both groups ---
+    out_0 = kalman_filter(Y, X, **theta_0)
+    out_1 = kalman_filter(Y, X, **theta_1)
+ 
+    ll_0 = out_0[-1]   # log p(Y | X, theta_0)
+    ll_1 = out_1[-1]   # log p(Y | X, theta_1)
+ 
+    # --- Step 2: hard group assignment by log-likelihood ---
+    group = 0 if ll_0 >= ll_1 else 1
+ 
+    # --- Step 3: smoother under winning group ---
+    if group == 0:
+        z_filt, P_filt, z_pred, P_pred, K, _ = out_0
+        theta_win = theta_0
+    else:
+        z_filt, P_filt, z_pred, P_pred, K, _ = out_1
+        theta_win = theta_1
+ 
+    z_smooth, P_smooth, _ = rts_smoother(
+        z_filt, P_filt, z_pred, P_pred, theta_win['lam']
+    )
+ 
+    return dict(
+        group    = group,
+        log_liks = {0: ll_0, 1: ll_1},
+        z_filt   = z_filt,
+        P_filt   = P_filt,
+        z_smooth = z_smooth,
+        P_smooth = P_smooth,
+    )
+ 
+ 
+def infer_patients(Y_test, X_test, theta_0, theta_1):
+    """
+    Run infer_patient over a batch of N patients.
+ 
+    Parameters
+    ----------
+    Y_test   : (N, T)
+    X_test   : (N, T)
+    theta_0  : dict
+    theta_1  : dict
+ 
+    Returns
+    -------
+    results  : list of N dicts (one per patient, same keys as infer_patient)
+    """
+    return [
+        infer_patient(Y_test[n], X_test[n], theta_0, theta_1)
+        for n in range(len(Y_test))
+    ]
+ 
+ 
+# ---------------------------------------------------------------------------
+# Quick test
+# ---------------------------------------------------------------------------
+ 
+if __name__ == "__main__":
+ 
+    def generate_synthetic_samples(
+        n_patients=100, T=50,
+        alpha_0=0.6, lambda_0=0.8, beta_0=0.5, gamma_0=0.2,
+        sigma_w_0=0.1, sigma_e_0=0.1,
+        alpha_1=0.3, lambda_1=0.4, beta_1=0.9, gamma_1=0.5,
+        sigma_w_1=0.1, sigma_e_1=0.1,
+    ):
+        params = {
+            0: dict(alpha=alpha_0, lam=lambda_0, beta=beta_0,
+                    gamma=gamma_0, sigma_w=sigma_w_0, sigma_e=sigma_e_0),
+            1: dict(alpha=alpha_1, lam=lambda_1, beta=beta_1,
+                    gamma=gamma_1, sigma_w=sigma_w_1, sigma_e=sigma_e_1),
+        }
+        j = np.random.choice([0, 1], size=n_patients)
+        X = np.zeros((n_patients, T))
+        Z = np.zeros((n_patients, T))
+        Y = np.zeros((n_patients, T))
+        for n in range(n_patients):
+            p = params[j[n]]
+            X[n] = np.cumsum(np.random.randn(T)) * 0.5
+            z_prev = 0.0
+            for t in range(T):
+                w   = np.random.normal(0, p['sigma_w'])
+                e   = np.random.normal(0, p['sigma_e'])
+                z_t = p['alpha'] * X[n, t] + p['lam'] * z_prev + w
+                y_t = p['beta']  * z_t     + p['gamma'] * X[n, t] + e
+                Z[n, t] = z_t;  Y[n, t] = y_t;  z_prev = z_t
+        return j, X, Z, Y
+ 
+    np.random.seed(42)
+    j_train, X_train, Z_train, Y_train = generate_synthetic_samples(
+        n_patients=200, T=50
+    )
+ 
+    TRUE = {
+        0: dict(alpha=0.6, lam=0.8, beta=0.5, gamma=0.2, sigma_w=0.1, sigma_e=0.1),
+        1: dict(alpha=0.3, lam=0.4, beta=0.9, gamma=0.5, sigma_w=0.1, sigma_e=0.1),
+    }
+ 
+    print("True parameters:")
+    for g in [0, 1]:
+        p = TRUE[g]
+        print(f"  Group {g}: alpha={p['alpha']}  lam={p['lam']}  "
+              f"beta={p['beta']}  gamma={p['gamma']}  "
+              f"sigma_w={p['sigma_w']}  sigma_e={p['sigma_e']}")
+ 
+    # Run with default init
+    thetas, log_liks = fit_mixture_ssm(
+        j_train, X_train, Y_train, max_iter=200, tol=1e-5
+    )
+ 
+    print("\nRecovery summary:")
+    for g in [0, 1]:
+        print(f"\n  Group {g}:")
+        for k in ['alpha', 'lam', 'beta', 'gamma', 'sigma_w', 'sigma_e']:
+            print(f"    {k:8s}  true={TRUE[g][k]:.3f}  est={thetas[g][k]:.3f}")
+ 
+    # -----------------------------------------------------------------------
+    # Phase 2: infer group labels and z trajectories on held-out patients
+    # -----------------------------------------------------------------------
+ 
+    np.random.seed(99)
+    j_test, X_test, Z_test, Y_test = generate_synthetic_samples(
+        n_patients=50, T=50
+    )
+ 
+    results = infer_patients(Y_test, X_test, thetas[0], thetas[1])
+ 
+    # group assignment accuracy
+    j_pred = np.array([r['group'] for r in results])
+    acc    = np.mean(j_pred == j_test)
+    print(f"\nPhase 2 — group assignment accuracy: {acc:.2%}  ({int(acc*50)}/50)")
+ 
+    # z trajectory recovery: MAE vs true Z, separated by group
+    for g in [0, 1]:
+        idx = np.where(j_test == g)[0]
+        if len(idx) == 0:
+            continue
+        mae_filt   = np.mean([np.mean(np.abs(results[n]['z_filt']   - Z_test[n])) for n in idx])
+        mae_smooth = np.mean([np.mean(np.abs(results[n]['z_smooth'] - Z_test[n])) for n in idx])
+        print(f"  Group {g} ({len(idx)} patients):"
+              f"  MAE filtered={mae_filt:.4f}  MAE smoothed={mae_smooth:.4f}")
+ 
+    # detailed view of one example patient
+    n = np.where(j_test == 0)[0][0]
+    r = results[n]
+    T = Y_test.shape[1]
+    print(f"\nExample patient (true group={j_test[n]}, assigned={r['group']}):")
+    print(f"  log-lik group 0: {r['log_liks'][0]:.2f}")
+    print(f"  log-lik group 1: {r['log_liks'][1]:.2f}")
+    print(f"  {'t':>4}  {'z_true':>8}  {'z_filt':>8}  {'z_smooth':>9}"
+          f"  {'±2σ_filt':>9}  {'±2σ_smooth':>11}")
+    for t in range(0, T, 5):
+        print(f"  {t:>4}  {Z_test[n,t]:>8.3f}  {r['z_filt'][t]:>8.3f}"
+              f"  {r['z_smooth'][t]:>9.3f}"
+              f"  {2*r['P_filt'][t]**0.5:>9.3f}  {2*r['P_smooth'][t]**0.5:>11.3f}")
+ 
+    print()
+    print("NOTE — identifiability of alpha and beta:")
+    print("  With random-walk inputs and small sigma_w, z_t is nearly a")
+    print("  deterministic filtered version of x_t (corr ~ 0.96).")
+    print("  The Kalman smoother cannot separate 'how much of y came via z'")
+    print("  vs 'directly from x', so alpha and beta are only identified")
+    print("  through their product alpha*beta.")
+    print("  lam, gamma, sigma_e recover well because lam governs time dynamics")
+    print("  (independent of x) and gamma is the direct x->y coefficient.")
+    for g in [0, 1]:
+        t_ab = TRUE[g]['alpha'] * TRUE[g]['beta']
+        e_ab = thetas[g]['alpha'] * thetas[g]['beta']
+        print(f"  Group {g}: true alpha*beta={t_ab:.3f}  est alpha*beta={e_ab:.3f}")
