@@ -277,3 +277,27 @@ def plot_mean_std(
         plt.show()
  
     plt.close(fig)
+
+def plot_accuracy_active_learning(curves, sems=None, save_path=None):
+    """
+    curves : dict like {"active": acc_active, "random": acc_random}
+    sems   : optional dict of same shape, for +/- shaded bands
+    """
+    T = len(next(iter(curves.values())))     # length of any curve
+    steps = np.arange(1, T + 1)
+
+    plt.figure(figsize=(8, 5))
+    for label, acc in curves.items():
+        line, = plt.plot(steps, acc, label=label, lw=2)
+        if sems is not None and label in sems:
+            plt.fill_between(steps, acc - sems[label], acc + sems[label],
+                             color=line.get_color(), alpha=0.2)
+    plt.axhline(0.5, ls="--", color="gray")
+    plt.xlabel("time step")
+    plt.ylabel("fraction correct")
+    plt.title(f"{T} steps")
+    plt.legend()
+    plt.tight_layout()
+    if save_path:
+        plt.savefig(save_path, dpi=150)
+    plt.show()
