@@ -1,125 +1,9 @@
 import numpy as np
 from utils.kalman_filter import kalman_filter
+from utils.monte_carlo_uncertainty_sampling import select_next_x_uncertainty_sampling
 from utils.infer_patient import _innovations_log_likelihood
 
-
-def estimate_next_y(X, Y, estimated_params, next_x, group_label):
-    """
-    Estimate the next observation y_{T+1} for a patient given their data and the estimated parameters.
-
-    Parameters
-    ----------
-    X : array-like, shape (T,)
-        Input signals x_t for the patient.
-    Y : array-like, shape (T,)
-        Observations y_t for the patient.
-    estimated_params : dict
-        Estimated parameters for both groups. Should contain keys 0 and 1, each mapping to a dict of parameters.
-    next_x : float
-        The next input signal x_{T+1} for which we want to estimate y_{T+1}.
-    group_label : int
-        The group label (0 or 1) indicating which group's parameters to use for estimation.
-
-    Returns
-    -------
-    estimated_y_next : float
-        The estimated next observation y_{T+1}.
-    """
-    params = estimated_params[group_label]
-    
-    # Run Kalman filter on the existing data to get the last state estimate
-    z_filt, P_filt, z_pred, P_pred = kalman_filter(Y, X, 
-                                                   params['alpha'], 
-                                                   params['lam'], 
-                                                   params['beta'], 
-                                                   params['gamma'], 
-                                                   params['sigma_w'], 
-                                                   params['sigma_e'])
-    
-    # Get the last filtered state and its variance
-    z_last = z_filt[-1]
-    P_last = P_filt[-1]
-    
-    # Predict the next state using the state equation
-    z_next_pred = params['alpha'] * next_x + params['lam'] * z_last
-    
-    # Predict the next observation using the observation equation
-    estimated_y_next = params['beta'] * z_next_pred + params['gamma'] * next_x
-    
-    return estimated_y_next
-
-def predicted_probability_group1(X, Y, estimated_params, next_x, timestep, prior_1=0.5):
-    # trim the input arrays to the current timestep + 1
-    X = np.asarray(X)
-    Y = np.asarray(Y)
- 
-    prior_0 = 1.0 - prior_1
-    
-    # create two arrays such that one contains the last y under group 0 and the other under group 1
-    Y_est_group_0 = np.copy(Y)
-    Y_est_group_1 = np.copy(Y)
-
-    y_next_0 = estimate_next_y(X, Y, estimated_params, next_x, group_label=0)
-    y_next_1 = estimate_next_y(X, Y, estimated_params, next_x, group_label=1)
-    Y_est_group_0 = np.append(Y_est_group_0, y_next_0)
-    Y_est_group_1 = np.append(Y_est_group_1, y_next_1)
-    
-    X = np.append(X, next_x)  # Append the candidate next_x to the input signals
-
-    # --- Marginal log-likelihoods under each model ---
-    log_lik_0 = _innovations_log_likelihood(Y_est_group_0, X, estimated_params[0])
-    log_lik_1 = _innovations_log_likelihood(Y_est_group_1, X, estimated_params[1])
- 
-    # --- Posterior in log-space for numerical stability ---
-    # log unnormalised posteriors
-    log_post_0 = log_lik_0 + np.log(prior_0)
-    log_post_1 = log_lik_1 + np.log(prior_1)
- 
-    # log-sum-exp normalisation
-    log_normaliser = np.logaddexp(log_post_0, log_post_1)
-    prob_1 = np.exp(log_post_1 - log_normaliser)
-    return prob_1
-
-def choose_next_x(X, Y, estimated_params, candidates, timestep, prior_1=0.5):
-    """
-    Choose the next input signal x_{T+1} from a set of candidates based on the current patient data and estimated parameters.
-
-    Parameters
-    ----------
-    X : array-like, shape (T,)
-        Input signals x_t for the patient.
-    Y : array-like, shape (T,)
-        Observations y_t for the patient.
-    estimated_params : dict
-        Estimated parameters for both groups. Should contain keys 0 and 1, each mapping to a dict of parameters.
-    candidates : array-like, shape (n_candidates,)
-        Candidate input signals to choose from for x_{T+1}.
-    timestep : int
-        The current timestep T (0-indexed).
-    prior_1 : float
-        Prior probability of belonging to group 1, P(c_n = 1). Defaults to 0.5.
-
-    Returns
-    -------
-    best_candidate : float
-        The candidate input signal that maximizes the expected information gain or minimizes uncertainty.
-    """
-    best_candidate = None
-    best_prob_diff = np.inf
-
-    for candidate in candidates:
-        prob_1 = predicted_probability_group1(X, Y, estimated_params, candidate, timestep, prior_1)
-        prob_diff = abs(prob_1 - 0.5)  # We want to minimize the difference from 0.5 (uncertainty)
-
-        if prob_diff < best_prob_diff:
-            best_prob_diff = prob_diff
-            best_candidate = candidate
-
-    return best_candidate
-
-def class_posterior(X, Y, estimated_params, timestep, prior_1=0.5):
-    X = X[:timestep]
-    Y = Y[:timestep]
+def class_posterior(X, Y, estimated_params, prior_1=0.5):
     X = np.asarray(X)
     Y = np.asarray(Y)
  
@@ -140,7 +24,25 @@ def class_posterior(X, Y, estimated_params, timestep, prior_1=0.5):
     return prob_1
 
 def run_patient_with_active_learning(patient, estimated_params, candidates,
-                               policy="active", T=50, prior_1=0.5, seed=0):
+                               policy="uncertainty sampling", T=50, prior_1=0.5, seed=0):
+    """
+    Parameters
+    ----------
+    patient : Patient
+        The patient object to run the simulation on.
+    estimated_params : dict
+        Estimated parameters for both groups. Should contain keys 0 and 1, each mapping to a dict of parameters.
+    candidates : array-like, shape (n_candidates,)
+        Candidate input signals to choose from for x_{t+1}.
+    policy : str, optional
+        The policy to use for selecting the next input signal. Options are "random", "uncertainty sampling" or "mutual information"
+    T: int, optional
+        The number of timesteps to run the simulation for. Defaults to 50.
+    prior_1 : float, optional
+        Prior probability of belonging to group 1, P(c_n = 1). Defaults to 0.5.
+    seed : int, optional
+        Random seed for reproducibility. Defaults to 0.
+    """
     true_group = patient.group
 
     # if policy is "random"
@@ -149,29 +51,39 @@ def run_patient_with_active_learning(patient, estimated_params, candidates,
 
     probs   = np.empty(T)
     correct = np.empty(T, dtype=bool)
+    current_prior = prior_1
     
-
     for t in range(T):
-        X, _, Y = patient.history()
-
         if t == 0:
             probs[t] = prior_1
             correct[t] = (int(prior_1 > 0.5) == true_group)
+            next_x = x_rng.uniform(lo, hi)  # choose a random next_x for the first timestep
+            
         else:
-            p1 = class_posterior(X, Y, estimated_params, t, prior_1)
-            probs[t] = p1
-            correct[t] = (int(p1 > 0.5) == true_group)
+            X, _, Y = patient.history()
+            z_pred_means = {}
+            z_pred_vars = {}
+            # use Kalman filter to get the predicted means and variances for both groups
+            for group_label in [0, 1]:
+                params = estimated_params[group_label]
+                z_filt, P_filt, z_pred, P_pred = kalman_filter(Y, X,
+                                                               params['alpha'],
+                                                               params['lam'],
+                                                               params['beta'],
+                                                               params['gamma'],
+                                                               params['sigma_w'],
+                                                               params['sigma_e'])
+                z_pred_means[group_label] = z_pred[-1]
+                z_pred_vars[group_label] = P_pred[-1]
+            # update posterior
+            current_prior = class_posterior(X, Y, estimated_params, current_prior)
 
-        # choose next x
-        if policy == "random":
-            next_x = x_rng.uniform(lo, hi)
-        elif policy == "active":
-            if len(Y) == 0:                       # no data yet → can't inform the choice
+            if policy == "random":
                 next_x = x_rng.uniform(lo, hi)
+            elif policy == "uncertainty sampling":
+                next_x = select_next_x_uncertainty_sampling(candidates, estimated_params, z_pred_means, z_pred_vars, prior_1=current_prior, samples_size=50)
             else:
-                next_x = choose_next_x(X, Y, estimated_params, candidates, t, prior_1)
-        else:
-            raise ValueError(f"unknown policy {policy!r}")
+                raise ValueError(f"unknown policy {policy!r}")
 
         patient.step(next_x)
 
