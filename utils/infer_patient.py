@@ -104,9 +104,9 @@ def infer_patient(X, Y, params_0, params_1, prior_1=0.5):
     log_post_0 = log_lik_0 + np.log(prior_0)
     log_post_1 = log_lik_1 + np.log(prior_1)
  
-    # log-sum-exp normalisation
-    log_normaliser = np.logaddexp(log_post_0, log_post_1)
-    prob_1 = np.exp(log_post_1 - log_normaliser)
+    # log-sum-exp normalization
+    log_normalizer = np.logaddexp(log_post_0, log_post_1)
+    prob_1 = np.exp(log_post_1 - log_normalizer)
     c_n    = int(prob_1 >= 0.5)
  
     # --- Kalman filter under the inferred group's model ---
