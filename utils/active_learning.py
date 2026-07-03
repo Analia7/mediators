@@ -1,5 +1,6 @@
 import numpy as np
 from utils.kalman_filter import kalman_filter
+from utils.monte_carlo_mutual_information import select_next_x_mutual_information
 from utils.monte_carlo_uncertainty_sampling import select_next_x_uncertainty_sampling
 from utils.infer_patient import _innovations_log_likelihood
 
@@ -77,13 +78,19 @@ def run_patient_with_active_learning(patient, estimated_params, candidates,
                 z_pred_vars[group_label] = P_pred[-1]
             # update posterior
             current_prior = class_posterior(X, Y, estimated_params, current_prior)
+            probs[t] = current_prior
+            correct[t] = (int(current_prior > 0.5) == true_group)
 
             if policy == "random":
                 next_x = x_rng.uniform(lo, hi)
             elif policy == "uncertainty sampling":
                 next_x = select_next_x_uncertainty_sampling(candidates, estimated_params, z_pred_means, z_pred_vars, prior_1=current_prior, samples_size=50)
+            
+            elif policy == "mutual information":
+                next_x = select_next_x_mutual_information(candidates, estimated_params, z_pred_means, z_pred_vars, prior_1=current_prior, samples_size=50)
             else:
                 raise ValueError(f"unknown policy {policy!r}")
+            
 
         patient.step(next_x)
 

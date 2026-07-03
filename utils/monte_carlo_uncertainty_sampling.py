@@ -79,7 +79,7 @@ def draw_samples_from_mixture_distribution(y_pred_means, y_pred_vars, prior_1, s
     ])
     return group_label_samples, y_samples
 
-def evaluate_Shannon_entropy(x_candidate, y_pred_means, y_pred_vars, group_label_samples, y_samples, prior_1):
+def evaluate_Shannon_entropy(y_pred_means, y_pred_vars, group_label_samples, y_samples, prior_1):
     """
     Evaluate the Shannon entropy for a candidate x_{t+1} based on the sampled group labels and y_{t+1} values.
     
@@ -156,10 +156,10 @@ def select_next_x_uncertainty_sampling(x_candidates, estimated_params, z_pred_me
     Returns
     -------
     best_candidate : float
-        The candidate input signal that maximizes uncertainty.
+        The candidate input signal that minimizes uncertainty.
     """
     best_candidate = None
-    max_entropy = -np.inf
+    min_entropy = np.inf
 
     for candidate in x_candidates:
         # compute the predicted means and variances of y_{t+1} under both group models given the candidate x_{t+1}
@@ -169,10 +169,10 @@ def select_next_x_uncertainty_sampling(x_candidates, estimated_params, z_pred_me
         group_label_samples, y_samples = draw_samples_from_mixture_distribution(y_pred_means, y_pred_vars, prior_1, samples_size)
 
         # evaluate the Shannon entropy for the candidate x_{t+1}
-        entropy = evaluate_Shannon_entropy(candidate, y_pred_means, y_pred_vars, group_label_samples, y_samples, prior_1)
+        entropy = evaluate_Shannon_entropy(y_pred_means, y_pred_vars, group_label_samples, y_samples, prior_1)
 
-        if entropy > max_entropy:
-            max_entropy = entropy
+        if entropy < min_entropy:
+            min_entropy = entropy
             best_candidate = candidate
     return best_candidate
 
