@@ -10,17 +10,17 @@ import numpy as np
 # low noise (both sigma_w and sigma_e are low)
 low_noise_params = {
     'alpha_0': 0.6, 'lambda_0': 0.8, 'beta_0': 0.5, 'gamma_0': 0.2,
-    'sigma_w_0': 0.1, 'sigma_e_0': 0.25,
+    'sigma_w_0': 0.1, 'sigma_e_0': 0.1,
     'alpha_1': 0.3, 'lambda_1': 0.4, 'beta_1': 0.9, 'gamma_1': 0.5,
-    'sigma_w_1': 0.1, 'sigma_e_1': 0.25,
+    'sigma_w_1': 0.1, 'sigma_e_1': 0.1,
 }
 
 # high noise (both sigma_w and sigma_e are high)
 high_noise_params = {
     'alpha_0': 0.6, 'lambda_0': 0.8, 'beta_0': 0.5, 'gamma_0': 0.2,
-    'sigma_w_0': 0.5, 'sigma_e_0': 1.0,
+    'sigma_w_0': 1.0, 'sigma_e_0': 1.0,
     'alpha_1': 0.3, 'lambda_1': 0.4, 'beta_1': 0.9, 'gamma_1': 0.5,
-    'sigma_w_1': 0.5, 'sigma_e_1': 1.0,
+    'sigma_w_1': 1.0, 'sigma_e_1': 1.0,
 }
 
 # mixed (sigma_w is low, sigma_e is high)
@@ -34,34 +34,42 @@ mixed_noise_params_sigma_low = {
 # mixed (sigma_w is high, sigma_e is low)
 mixed_noise_params_sigma_high = {
     'alpha_0': 0.6, 'lambda_0': 0.8, 'beta_0': 0.5, 'gamma_0': 0.2,
-    'sigma_w_0': 0.5, 'sigma_e_0': 0.25,
+    'sigma_w_0': 1.0, 'sigma_e_0': 0.1,
     'alpha_1': 0.3, 'lambda_1': 0.4, 'beta_1': 0.9, 'gamma_1': 0.5,
-    'sigma_w_1': 0.5, 'sigma_e_1': 0.25,
+    'sigma_w_1': 1.0, 'sigma_e_1': 0.1,
 }
 
 # noise is average, gamma is high for both groups
 gamma_high_params_both_groups = {
     'alpha_0': 0.6, 'lambda_0': 0.8, 'beta_0': 0.5, 'gamma_0': 0.9,
-    'sigma_w_0': 0.25, 'sigma_e_0': 0.4,
+    'sigma_w_0': 0.4, 'sigma_e_0': 0.4,
     'alpha_1': 0.3, 'lambda_1': 0.4, 'beta_1': 0.9, 'gamma_1': 0.9,
-    'sigma_w_1': 0.25, 'sigma_e_1': 0.4,
+    'sigma_w_1': 0.4, 'sigma_e_1': 0.4,
 }
 
 # noise is average, gamma is low for both groups
 gamma_low_params_both_groups = {
     'alpha_0': 0.6, 'lambda_0': 0.8, 'beta_0': 0.5, 'gamma_0': 0.1,
-    'sigma_w_0': 0.25, 'sigma_e_0': 0.4,
+    'sigma_w_0': 0.4, 'sigma_e_0': 0.4,
     'alpha_1': 0.3, 'lambda_1': 0.4, 'beta_1': 0.9, 'gamma_1': 0.1,
-    'sigma_w_1': 0.25, 'sigma_e_1': 0.4,
+    'sigma_w_1': 0.4, 'sigma_e_1': 0.4,
 }
 
 # noise is average, gamma is high for group 0 and low for group 1
 gamma_high_low_params = {
     'alpha_0': 0.6, 'lambda_0': 0.8, 'beta_0': 0.5, 'gamma_0': 0.9,
-    'sigma_w_0': 0.25, 'sigma_e_0': 0.4,
+    'sigma_w_0': 0.4, 'sigma_e_0': 0.4,
     'alpha_1': 0.3, 'lambda_1': 0.4, 'beta_1': 0.9, 'gamma_1': 0.1,
-    'sigma_w_1': 0.25, 'sigma_e_1': 0.4,
+    'sigma_w_1': 0.4, 'sigma_e_1': 0.4,
 }
+
+# noise is average, gamma is low for group 0 and high for group 1
+gamma_low_high_params = {
+    'alpha_0': 0.6, 'lambda_0': 0.8, 'beta_0': 0.5, 'gamma_0': 0.1,
+    'sigma_w_0': 0.4, 'sigma_e_0': 0.4,
+    'alpha_1': 0.3, 'lambda_1': 0.4, 'beta_1': 0.9, 'gamma_1': 0.9,
+    'sigma_w_1': 0.4, 'sigma_e_1': 0.4,
+}   
 
 parameter_sets = {
     'low_noise': low_noise_params,
@@ -71,6 +79,7 @@ parameter_sets = {
     'gamma_high_both_groups': gamma_high_params_both_groups,
     'gamma_low_both_groups': gamma_low_params_both_groups,
     'gamma_high_low': gamma_high_low_params,
+    'gamma_low_high': gamma_low_high_params,
 }
 
 for name, params in parameter_sets.items():

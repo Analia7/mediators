@@ -1,0 +1,176 @@
+
+Running experiment with parameter set: low_noise
+
+Group 0 estimated params:
+  alpha: 0.6152
+  lam: 0.8133
+  beta: 0.4702
+  gamma: 0.2041
+  sigma_w: 0.0982
+  sigma_e: 0.1043
+
+Group 1 estimated params:
+  alpha: 0.6356
+  lam: 0.4716
+  beta: 0.3467
+  gamma: 0.5559
+  sigma_w: 0.2578
+  sigma_e: 0.0984
+Our approach:
+Accuracy: 1.0000  (100/100 correct)
+Logistic Regression (Full Time Series) Accuracy: 0.4700
+Logistic Regression (Distribution Moments) Accuracy: 0.5700
+
+Running experiment with parameter set: high_noise
+
+Group 0 estimated params:
+  alpha: 0.1965
+  lam: 0.7773
+  beta: 0.9274
+  gamma: 0.3008
+  sigma_w: 0.5537
+  sigma_e: 0.9930
+
+Group 1 estimated params:
+  alpha: 0.4728
+  lam: 0.3147
+  beta: 1.3965
+  gamma: 0.1782
+  sigma_w: 0.7942
+  sigma_e: 0.8079
+Our approach:
+Accuracy: 0.8500  (85/100 correct)
+Logistic Regression (Full Time Series) Accuracy: 0.5600
+Logistic Regression (Distribution Moments) Accuracy: 0.7600
+
+Running experiment with parameter set: mixed_noise_sigma_low
+
+Group 0 estimated params:
+  alpha: 0.5922
+  lam: 0.6812
+  beta: 0.5054
+  gamma: 0.1220
+  sigma_w: 0.3707
+  sigma_e: 0.9834
+
+Group 1 estimated params:
+  alpha: 0.5585
+  lam: 0.0760
+  beta: 1.3227
+  gamma: -0.0216
+  sigma_w: 0.4492
+  sigma_e: 0.7919
+Our approach:
+Accuracy: 0.6600  (66/100 correct)
+Logistic Regression (Full Time Series) Accuracy: 0.5600
+Logistic Regression (Distribution Moments) Accuracy: 0.6000
+
+Running experiment with parameter set: mixed_noise_sigma_high
+
+Group 0 estimated params:
+  alpha: 0.2964
+  lam: 0.7984
+  beta: 1.0030
+  gamma: 0.1672
+  sigma_w: 0.4690
+  sigma_e: 0.1476
+
+Group 1 estimated params:
+  alpha: 0.1864
+  lam: 0.4961
+  beta: 1.2281
+  gamma: 0.5256
+  sigma_w: 0.6505
+  sigma_e: 0.4034
+Our approach:
+Accuracy: 1.0000  (100/100 correct)
+Logistic Regression (Full Time Series) Accuracy: 0.4800
+Logistic Regression (Distribution Moments) Accuracy: 0.9500
+
+Running experiment with parameter set: gamma_high_both_groups
+
+Group 0 estimated params:
+  alpha: 0.6102
+  lam: 0.7985
+  beta: 0.5392
+  gamma: 0.8643
+  sigma_w: 0.3917
+  sigma_e: 0.3962
+
+Group 1 estimated params:
+  alpha: 0.3183
+  lam: 0.3310
+  beta: 0.9028
+  gamma: 0.8977
+  sigma_w: 0.4269
+  sigma_e: 0.3724
+Our approach:
+Accuracy: 0.8900  (89/100 correct)
+Logistic Regression (Full Time Series) Accuracy: 0.4300
+Logistic Regression (Distribution Moments) Accuracy: 0.5900
+
+Running experiment with parameter set: gamma_low_both_groups
+
+Group 0 estimated params:
+  alpha: 0.4861
+  lam: 0.8122
+  beta: 0.5527
+  gamma: 0.1159
+  sigma_w: 0.3367
+  sigma_e: 0.4024
+
+Group 1 estimated params:
+  alpha: 0.3371
+  lam: 0.4375
+  beta: 0.9157
+  gamma: 0.0738
+  sigma_w: 0.3370
+  sigma_e: 0.4226
+Our approach:
+Accuracy: 0.8900  (89/100 correct)
+Logistic Regression (Full Time Series) Accuracy: 0.5100
+Logistic Regression (Distribution Moments) Accuracy: 0.6200
+
+Running experiment with parameter set: gamma_high_low
+
+Group 0 estimated params:
+  alpha: 0.6689
+  lam: 0.7920
+  beta: 0.5132
+  gamma: 0.8950
+  sigma_w: 0.3892
+  sigma_e: 0.3937
+
+Group 1 estimated params:
+  alpha: 0.2519
+  lam: 0.3622
+  beta: 0.9634
+  gamma: 0.1245
+  sigma_w: 0.4060
+  sigma_e: 0.3756
+Our approach:
+Accuracy: 0.9900  (99/100 correct)
+Logistic Regression (Full Time Series) Accuracy: 0.5500
+Logistic Regression (Distribution Moments) Accuracy: 0.9000
+
+Running experiment with parameter set: gamma_low_high
+
+Group 0 estimated params:
+  alpha: 0.4654
+  lam: 0.7873
+  beta: 0.6432
+  gamma: 0.1165
+  sigma_w: 0.3400
+  sigma_e: 0.3959
+
+Group 1 estimated params:
+  alpha: 0.2883
+  lam: 0.4405
+  beta: 0.7404
+  gamma: 0.9044
+  sigma_w: 0.4480
+  sigma_e: 0.4219
+Our approach:
+Accuracy: 1.0000  (100/100 correct)
+Logistic Regression (Full Time Series) Accuracy: 0.5800
+Logistic Regression (Distribution Moments) Accuracy: 0.9300
