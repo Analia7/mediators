@@ -4,6 +4,14 @@ from utils.monte_carlo_mutual_information import select_next_x_mutual_informatio
 from utils.monte_carlo_uncertainty_sampling import select_next_x_uncertainty_sampling
 from utils.infer_patient import _innovations_log_likelihood
 
+
+# Stream index per policy, so each policy's Monte Carlo draws are independent and
+# reproducible on their own -- run one policy in isolation and it behaves exactly
+# as it did inside the full comparison. Keyed by an explicit table rather than
+# hash(policy): Python randomises string hashing per process, which would make
+# runs irreproducible.
+_POLICY_STREAM = {"random": 0, "uncertainty sampling": 1, "mutual information": 2}
+
 def class_posterior(X, Y, estimated_params, prior_1=0.5):
     X = np.asarray(X)
     Y = np.asarray(Y)
@@ -24,6 +32,46 @@ def class_posterior(X, Y, estimated_params, prior_1=0.5):
     prob_1 = np.exp(log_post_1 - log_normaliser)
     return prob_1
 
+class _OnlineSSM:
+    """
+    Per-group Kalman filter that consumes one (x_t, y_t) pair at a time.
+
+    Unlike calling `kalman_filter` on the whole history at every timestep, this
+    keeps the recursion's state, so it gives us two things the active-learning
+    loop needs:
+
+      * `log_lik` : the accumulated marginal log-likelihood log p(y_{1:t} | M_j),
+        built up from the one-step-ahead innovations. Combining this with the
+        base prior gives the class posterior directly (no double counting).
+      * `z`, `P`  : the *filtered* state E[z_t | y_{1:t}] and its variance.
+        Filtering only ever looks backwards, so this is available online — it is
+        smoothing (see `rts_smoother`) that would need the future.
+    """
+
+    def __init__(self, params, z0=0.0, P0=1.0):
+        self.p = params
+        self.z, self.P = float(z0), float(P0)
+        self.log_lik = 0.0
+
+    def update(self, x_t, y_t):
+        """Advance one step with the chosen x_t and the observed y_t."""
+        p = self.p
+
+        # --- Predict z_t from z_{t-1|t-1} ---
+        z_pred = p['alpha'] * x_t + p['lam'] * self.z
+        P_pred = p['lam'] ** 2 * self.P + p['sigma_w'] ** 2
+
+        # --- Innovation, and its contribution to log p(y_{1:t}) ---
+        v = y_t - p['beta'] * z_pred - p['gamma'] * x_t
+        S = p['beta'] ** 2 * P_pred + p['sigma_e'] ** 2
+        self.log_lik += -0.5 * (np.log(2 * np.pi * S) + v ** 2 / S)
+
+        # --- Update to the filtered state z_{t|t} ---
+        K = (p['beta'] * P_pred) / S
+        self.z = z_pred + K * v
+        self.P = (1 - K * p['beta']) * P_pred
+
+
 def run_patient_with_active_learning(patient, estimated_params, candidates,
                                policy="uncertainty sampling", T=50, prior_1=0.5, seed=0):
     """
@@ -42,57 +90,79 @@ def run_patient_with_active_learning(patient, estimated_params, candidates,
     prior_1 : float, optional
         Prior probability of belonging to group 1, P(c_n = 1). Defaults to 0.5.
     seed : int, optional
-        Random seed for reproducibility. Defaults to 0.
+        Seeds this patient's two independent streams: the probe sequence used by
+        the "random" policy, and the Monte Carlo draws used by the two active
+        policies. Vary it per patient -- a shared seed gives every patient the
+        same probe sequence. Defaults to 0.
+
+    Returns
+    -------
+    probs : np.ndarray, shape (T,)
+        probs[t] is the posterior P(c_n = 1 | y_{1:t}) after t observations, so
+        probs[0] is the prior.
+    correct : np.ndarray of bool, shape (T,)
+        Whether the MAP label at each timestep matches the patient's true group.
     """
+    if policy not in _POLICY_STREAM:
+        raise ValueError(f"unknown policy {policy!r}")
+
     true_group = patient.group
 
     # if policy is "random"
     x_rng = np.random.default_rng(10_000 + seed)
+    # Monte Carlo stream for the active policies, distinct per (patient, policy).
+    mc_rng = np.random.default_rng([20_000 + seed, _POLICY_STREAM[policy]])
     lo, hi = float(candidates.min()), float(candidates.max())
 
     probs   = np.empty(T)
     correct = np.empty(T, dtype=bool)
-    current_prior = prior_1
-    
+
+    # One running filter per group: accumulates log p(y_{1:t} | M_j) and tracks
+    # the filtered state that the policies extrapolate from.
+    filters = {group_label: _OnlineSSM(estimated_params[group_label])
+               for group_label in [0, 1]}
+
+    # t = 0: nothing observed yet, so the belief is just the prior. Probe at
+    # random, since no candidate is informative under an empty history.
+    probs[0]   = prior_1
+    correct[0] = (int(prior_1 > 0.5) == true_group)
+    next_x     = x_rng.uniform(lo, hi)
+
     for t in range(T):
-        if t == 0:
-            probs[t] = prior_1
-            correct[t] = (int(prior_1 > 0.5) == true_group)
-            next_x = x_rng.uniform(lo, hi)  # choose a random next_x for the first timestep
-            
+        y_t = patient.step(next_x)
+        for f in filters.values():
+            f.update(next_x, y_t)
+
+        if t == T - 1:
+            break
+
+        # --- Posterior after t+1 observations, in log-space ---
+        # The accumulated log_lik already covers the whole history, so this is
+        # combined with the *base* prior. Folding in the previous posterior
+        # instead would count the same evidence once per timestep.
+        log_post_0 = np.log(1.0 - prior_1) + filters[0].log_lik
+        log_post_1 = np.log(prior_1)       + filters[1].log_lik
+        posterior_1 = np.exp(log_post_1 - np.logaddexp(log_post_0, log_post_1))
+
+        probs[t + 1]   = posterior_1
+        correct[t + 1] = (int(posterior_1 > 0.5) == true_group)
+
+        # --- Choose x_{t+1} ---
+        # The policies advance one step from here, so hand them the filtered
+        # state z_{t|t}: using the predicted state z_{t|t-1} would throw away
+        # the observation we just made.
+        z_means = {group_label: filters[group_label].z for group_label in [0, 1]}
+        z_vars  = {group_label: filters[group_label].P for group_label in [0, 1]}
+
+        if policy == "random":
+            next_x = x_rng.uniform(lo, hi)
+        elif policy == "uncertainty sampling":
+            next_x = select_next_x_uncertainty_sampling(candidates, estimated_params, z_means, z_vars, prior_1=posterior_1, samples_size=50, rng=mc_rng)
+
+        elif policy == "mutual information":
+            next_x = select_next_x_mutual_information(candidates, estimated_params, z_means, z_vars, prior_1=posterior_1, samples_size=50, rng=mc_rng)
         else:
-            X, _, Y = patient.history()
-            z_pred_means = {}
-            z_pred_vars = {}
-            # use Kalman filter to get the predicted means and variances for both groups
-            for group_label in [0, 1]:
-                params = estimated_params[group_label]
-                z_filt, P_filt, z_pred, P_pred = kalman_filter(Y, X,
-                                                               params['alpha'],
-                                                               params['lam'],
-                                                               params['beta'],
-                                                               params['gamma'],
-                                                               params['sigma_w'],
-                                                               params['sigma_e'])
-                z_pred_means[group_label] = z_pred[-1]
-                z_pred_vars[group_label] = P_pred[-1]
-            # update posterior
-            current_prior = class_posterior(X, Y, estimated_params, current_prior)
-            probs[t] = current_prior
-            correct[t] = (int(current_prior > 0.5) == true_group)
-
-            if policy == "random":
-                next_x = x_rng.uniform(lo, hi)
-            elif policy == "uncertainty sampling":
-                next_x = select_next_x_uncertainty_sampling(candidates, estimated_params, z_pred_means, z_pred_vars, prior_1=current_prior, samples_size=50)
-            
-            elif policy == "mutual information":
-                next_x = select_next_x_mutual_information(candidates, estimated_params, z_pred_means, z_pred_vars, prior_1=current_prior, samples_size=50)
-            else:
-                raise ValueError(f"unknown policy {policy!r}")
-            
-
-        patient.step(next_x)
+            raise ValueError(f"unknown policy {policy!r}")
 
     return probs, correct
 
