@@ -1,0 +1,4 @@
+regime                    seed 0  seed 1  seed 2  seed 3  seed 4    mean     sd   group split per seed
+low_noise                   1.00    1.00    1.00    1.00    1.00   1.000  0.000   44/56 50/50 49/51 50/50 46/54
+high_noise                  0.78    0.88    0.91    0.84    0.86   0.854  0.049   54/46 45/55 56/44 53/47 44/56
+mixed_noise_sigma_low       0.75    0.77    0.72    0.73    0.72   0.738  0.022   54/46 56/44 51/49 51/49 45/55

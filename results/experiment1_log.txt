@@ -1,0 +1,210 @@
+
+Running experiment with parameter set: low_noise
+Converged at iteration 68
+
+Group 0 estimated params:
+  alpha: 0.5862
+  lam: 0.7982
+  beta: 0.5081
+  gamma: 0.1991
+  sigma_w: 0.1064
+  sigma_e: 0.0985
+Converged at iteration 357
+
+Group 1 estimated params:
+  alpha: 0.5939
+  lam: 0.3899
+  beta: 0.4930
+  gamma: 0.4757
+  sigma_w: 0.2046
+  sigma_e: 0.0889
+Our approach:
+Accuracy: 1.0000  (100/100 correct)
+Logistic Regression (Full Time Series) Accuracy: 0.5000
+Logistic Regression (Distribution Moments) Accuracy: 0.6000
+
+Running experiment with parameter set: high_noise
+Converged at iteration 69
+
+Group 0 estimated params:
+  alpha: 0.1369
+  lam: 0.7910
+  beta: 1.8192
+  gamma: 0.2616
+  sigma_w: 0.2684
+  sigma_e: 1.0260
+Converged at iteration 32
+
+Group 1 estimated params:
+  alpha: 0.4969
+  lam: 0.4934
+  beta: 0.0863
+  gamma: 0.7274
+  sigma_w: 0.2006
+  sigma_e: 1.3770
+Our approach:
+Accuracy: 0.7800  (78/100 correct)
+Logistic Regression (Full Time Series) Accuracy: 0.5500
+Logistic Regression (Distribution Moments) Accuracy: 0.6300
+
+Running experiment with parameter set: mixed_noise_sigma_low
+Converged at iteration 352
+
+Group 0 estimated params:
+  alpha: 0.5070
+  lam: 0.8237
+  beta: 0.5868
+  gamma: 0.1596
+  sigma_w: 0.1954
+  sigma_e: 0.9971
+/remote/rds/users/s2020748/mediators/experiment1.py:126: RuntimeWarning: em_ssm did not converge in 1000 iterations (last log-likelihood change 1.250e-04, relative tol 1e-08). Returning the best iterate (iteration 1000, log-likelihood -3224.9785).
+  est_params, log_liks, info = em_ssm(
+
+Group 1 estimated params:
+  alpha: 0.2375
+  lam: 0.4942
+  beta: 0.9052
+  gamma: 0.5409
+  sigma_w: 0.2583
+  sigma_e: 0.9469
+Our approach:
+Accuracy: 0.7500  (75/100 correct)
+Logistic Regression (Full Time Series) Accuracy: 0.5200
+Logistic Regression (Distribution Moments) Accuracy: 0.6400
+
+Running experiment with parameter set: mixed_noise_sigma_high
+Converged at iteration 678
+
+Group 0 estimated params:
+  alpha: 0.1704
+  lam: 0.8128
+  beta: 1.5997
+  gamma: 0.2000
+  sigma_w: 0.3053
+  sigma_e: 0.1376
+/remote/rds/users/s2020748/mediators/experiment1.py:126: RuntimeWarning: em_ssm did not converge in 1000 iterations (last log-likelihood change 6.378e-05, relative tol 1e-08). Returning the best iterate (iteration 1000, log-likelihood -2967.1693).
+  est_params, log_liks, info = em_ssm(
+
+Group 1 estimated params:
+  alpha: 0.0859
+  lam: 0.4397
+  beta: 2.2578
+  gamma: 0.5433
+  sigma_w: 0.3680
+  sigma_e: 0.3320
+Our approach:
+Accuracy: 1.0000  (100/100 correct)
+Logistic Regression (Full Time Series) Accuracy: 0.5400
+Logistic Regression (Distribution Moments) Accuracy: 0.9800
+
+Running experiment with parameter set: gamma_high_both_groups
+Converged at iteration 64
+
+Group 0 estimated params:
+  alpha: 0.3476
+  lam: 0.7860
+  beta: 0.8321
+  gamma: 0.9324
+  sigma_w: 0.2430
+  sigma_e: 0.3850
+Converged at iteration 229
+
+Group 1 estimated params:
+  alpha: 0.2008
+  lam: 0.4357
+  beta: 1.2038
+  gamma: 0.9494
+  sigma_w: 0.2988
+  sigma_e: 0.4163
+Our approach:
+Accuracy: 0.8300  (83/100 correct)
+Logistic Regression (Full Time Series) Accuracy: 0.5100
+Logistic Regression (Distribution Moments) Accuracy: 0.5400
+
+Running experiment with parameter set: gamma_low_both_groups
+Converged at iteration 58
+
+Group 0 estimated params:
+  alpha: 0.3503
+  lam: 0.8078
+  beta: 0.8629
+  gamma: 0.1168
+  sigma_w: 0.2292
+  sigma_e: 0.3928
+Converged at iteration 289
+
+Group 1 estimated params:
+  alpha: 0.1788
+  lam: 0.4284
+  beta: 1.1824
+  gamma: 0.1364
+  sigma_w: 0.2880
+  sigma_e: 0.4152
+Our approach:
+Accuracy: 0.8700  (87/100 correct)
+Logistic Regression (Full Time Series) Accuracy: 0.5400
+Logistic Regression (Distribution Moments) Accuracy: 0.5200
+
+Running experiment with parameter set: gamma_high_low
+Converged at iteration 60
+
+Group 0 estimated params:
+  alpha: 0.3491
+  lam: 0.8085
+  beta: 0.8586
+  gamma: 0.8698
+  sigma_w: 0.2421
+  sigma_e: 0.4007
+Converged at iteration 210
+
+Group 1 estimated params:
+  alpha: 0.1783
+  lam: 0.4605
+  beta: 1.1296
+  gamma: 0.1657
+  sigma_w: 0.2814
+  sigma_e: 0.4272
+Our approach:
+Accuracy: 1.0000  (100/100 correct)
+Logistic Regression (Full Time Series) Accuracy: 0.5500
+Logistic Regression (Distribution Moments) Accuracy: 0.9300
+
+Running experiment with parameter set: gamma_low_high
+Converged at iteration 55
+
+Group 0 estimated params:
+  alpha: 0.4093
+  lam: 0.8162
+  beta: 0.8022
+  gamma: 0.0915
+  sigma_w: 0.2108
+  sigma_e: 0.4024
+Converged at iteration 159
+
+Group 1 estimated params:
+  alpha: 0.1742
+  lam: 0.5745
+  beta: 0.9626
+  gamma: 0.9819
+  sigma_w: 0.2854
+  sigma_e: 0.4549
+Our approach:
+Accuracy: 1.0000  (100/100 correct)
+Logistic Regression (Full Time Series) Accuracy: 0.4200
+Logistic Regression (Distribution Moments) Accuracy: 0.9800
+
+============================================================================
+regime                    ours  LR-full  LR-mom       split   EM conv
+low_noise                 1.00     0.50    0.60     44/56         2/2
+high_noise                0.78     0.55    0.63     54/46         2/2
+mixed_noise_sigma_low     0.75     0.52    0.64     54/46         1/2
+mixed_noise_sigma_high    1.00     0.54    0.98     55/45         1/2
+gamma_high_both_groups    0.83     0.51    0.54     50/50         2/2
+gamma_low_both_groups     0.87     0.54    0.52     52/48         2/2
+gamma_high_low            1.00     0.55    0.93     38/62         2/2
+gamma_low_high            1.00     0.42    0.98     42/58         2/2
+mean                      0.90     0.52    0.73
+============================================================================
+
+Wrote results/experiment1_accuracy.csv  (8 rows)
+Wrote results/experiment1_parameters.csv  (16 rows)
