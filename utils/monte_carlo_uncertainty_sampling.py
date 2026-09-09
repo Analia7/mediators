@@ -1,6 +1,4 @@
 import numpy as np
-from scipy.stats import bernoulli
-from scipy.stats import norm
 
 def compute_predicted_means_vars(estimated_params, candidate, z_pred_means, z_pred_vars):
     """
@@ -47,7 +45,7 @@ def compute_predicted_means_vars(estimated_params, candidate, z_pred_means, z_pr
 
     return y_pred_means, y_pred_vars
 
-def draw_samples_from_mixture_distribution(y_pred_means, y_pred_vars, prior_1, samples_size):
+def draw_samples_from_mixture_distribution(y_pred_means, y_pred_vars, prior_1, samples_size, rng=None):
     """
     Draw samples from the mixture distribution of y_{t+1} given the predicted means and variances
         
@@ -61,6 +59,10 @@ def draw_samples_from_mixture_distribution(y_pred_means, y_pred_vars, prior_1, s
         Prior probability of belonging to group 1, P(c_n = 1).
     samples_size : int
         Number of samples to draw from the mixture distribution.
+    rng : np.random.Generator or None
+        Source of randomness. Pass an explicit Generator to make the draws
+        reproducible and independent of every other sampler in the program;
+        None creates a fresh unseeded one.
 
     Returns
     -------
@@ -69,14 +71,20 @@ def draw_samples_from_mixture_distribution(y_pred_means, y_pred_vars, prior_1, s
     y_samples : np.ndarray, shape (samples_size,)
         Sampled y_{t+1} values from the mixture distribution based on the sampled group
     """
-    # sample group labels based on the prior probabilities
-    group_label_samples = bernoulli.rvs(prior_1, size=samples_size)
+    rng = np.random.default_rng() if rng is None else rng
 
-    # sample y_{t+1} from the predicted distributions based on the sampled group labels
-    y_samples = np.array([
-        norm.rvs(loc=y_pred_means[group_label], scale=np.sqrt(y_pred_vars[group_label]))
-        for group_label in group_label_samples
-    ])
+    mu = np.array([y_pred_means[0], y_pred_means[1]])
+    sd = np.sqrt(np.array([y_pred_vars[0], y_pred_vars[1]]))
+
+    # sample group labels based on the prior probabilities
+    group_label_samples = (rng.random(samples_size) < prior_1).astype(int)
+
+    # sample y_{t+1} from the predicted distributions based on the sampled group
+    # labels. One vectorised call rather than one scipy call per sample: the
+    # Gaussian maths is identical, but scipy's rvs pays ~30us of argument
+    # validation and dispatch to produce a single ~30ns number.
+    y_samples = rng.normal(mu[group_label_samples], sd[group_label_samples])
+
     return group_label_samples, y_samples
 
 def evaluate_Shannon_entropy(y_pred_means, y_pred_vars, group_label_samples, y_samples, prior_1):
@@ -134,7 +142,7 @@ def evaluate_Shannon_entropy(y_pred_means, y_pred_vars, group_label_samples, y_s
     return np.mean(shannon_entropy_samples)
 
 
-def select_next_x_uncertainty_sampling(x_candidates, estimated_params, z_pred_means, z_pred_vars, prior_1=0.5, samples_size=50):
+def select_next_x_uncertainty_sampling(x_candidates, estimated_params, z_pred_means, z_pred_vars, prior_1=0.5, samples_size=50, rng=None):
     """
     Choose the next input signal x_{t+1} from a set of candidates based on the current patient data and estimated parameters.
 
@@ -152,6 +160,8 @@ def select_next_x_uncertainty_sampling(x_candidates, estimated_params, z_pred_me
         Prior probability of belonging to group 1, P(c_n = 1).
     samples_size : int
         Number of samples to draw from the mixture distribution for uncertainty estimation.
+    rng : np.random.Generator or None
+        Source of randomness for the Monte Carlo draws.
 
     Returns
     -------
@@ -166,7 +176,7 @@ def select_next_x_uncertainty_sampling(x_candidates, estimated_params, z_pred_me
         y_pred_means, y_pred_vars = compute_predicted_means_vars(estimated_params, candidate, z_pred_means, z_pred_vars)
 
         # draw samples from the mixture distribution of y_{t+1} given the predicted means and variances
-        group_label_samples, y_samples = draw_samples_from_mixture_distribution(y_pred_means, y_pred_vars, prior_1, samples_size)
+        group_label_samples, y_samples = draw_samples_from_mixture_distribution(y_pred_means, y_pred_vars, prior_1, samples_size, rng=rng)
 
         # evaluate the Shannon entropy for the candidate x_{t+1}
         entropy = evaluate_Shannon_entropy(y_pred_means, y_pred_vars, group_label_samples, y_samples, prior_1)

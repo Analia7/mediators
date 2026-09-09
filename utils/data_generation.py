@@ -11,12 +11,19 @@ def generate_synthetic_samples(
     # Group 1 SSM parameters
     alpha_1=0.3, lambda_1=0.4, beta_1=0.9, gamma_1=0.5,
     sigma_w_1=0.1, sigma_e_1=0.9,
+    seed=None,
 ):
     """
     Generates synthetic patient data from two group-specific SSMs:
 
       State:       z_t = alpha_j * x_t + lambda_j * z_{t-1} + w_t,   w ~ N(0, sigma_w)
       Observation: y_t = beta_j  * z_t  + gamma_j  * x_t   + e_t,   e ~ N(0, sigma_e)
+
+    seed : int, sequence of int, or None
+      Pass a seed for an isolated, independently reproducible stream. None keeps
+      the historical behaviour of drawing from the global np.random state, so
+      np.random.seed(...) still works -- but that state is shared with every
+      other consumer, so prefer an explicit seed.
 
     Returns:
       j  : (n_patients,)       group labels in {0, 1}
@@ -32,8 +39,10 @@ def generate_synthetic_samples(
                 gamma=gamma_1, sigma_w=sigma_w_1, sigma_e=sigma_e_1),
     }
 
+    rng = np.random if seed is None else np.random.default_rng(seed)
+
     # Assign group labels randomly
-    j = np.random.choice([0, 1], size=n_patients)
+    j = rng.choice([0, 1], size=n_patients)
 
     # Pre-allocate outputs
     X = np.zeros((n_patients, T))
@@ -45,12 +54,12 @@ def generate_synthetic_samples(
 
         # Input signal x_t (was random walk, swap for your real signal if available)
         # currently, it is just random
-        X[n] = np.random.randn(T) * 0.5
+        X[n] = rng.standard_normal(T) * 0.5
 
         z_prev = 0.0
         for t in range(T):
-            w = np.random.normal(0, p['sigma_w'])
-            e = np.random.normal(0, p['sigma_e'])
+            w = rng.normal(0, p['sigma_w'])
+            e = rng.normal(0, p['sigma_e'])
 
             z_t = p['alpha'] * X[n, t] + p['lam'] * z_prev + w
             y_t = p['beta']  * z_t     + p['gamma'] * X[n, t] + e

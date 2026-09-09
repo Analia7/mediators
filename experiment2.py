@@ -7,6 +7,19 @@ from utils.baseline import logistic_regression_prediction
 import numpy as np
 
 print("\nRunning experiment 2: Active Learning with EM-estimated parameters")
+
+# Every stochastic component below takes an explicit seed derived from SEED, so a
+# rerun reproduces exactly and each component is independent of the others:
+#   - the training set                        seed=(SEED, 0)
+#   - patient i's noise realisation           seed=i          (shared across policies)
+#   - patient i's probe sequence / MC draws    seed=i          (per-policy streams)
+# The global np.random.seed is a belt-and-braces default for anything added later
+# that forgets to take a seed; nothing here relies on it.
+SEED = 0
+np.random.seed(SEED)
+
+TAG = "mixed_noise_sigmaw_low"
+
 # parameters for synthetic data generation experiments
 # mixed (sigma_w is low, sigma_e is high)
 params = {
@@ -17,7 +30,7 @@ params = {
 }
   
 print(f"\nRunning experiment with parameter set: {params}")
-j_train, X_train, Z_train, Y_train = generate_synthetic_samples(n_patients=100, T=50, **params)
+j_train, X_train, Z_train, Y_train = generate_synthetic_samples(n_patients=100, T=50, seed=(SEED, 0), **params)
 
 # estimate parameters for each group using EM algorithm
 estimated_params = {}
@@ -30,7 +43,7 @@ for group in [0, 1]:
     est_params, log_liks = em_ssm(
         X_group, Y_group,
         alpha_init=0.5, lam_init=0.5, beta_init=0.5, gamma_init=0.5,
-        sigma_w_init=0.2, sigma_e_init=0.2,
+        sigma_w_init=0.2,   # sigma_e_init defaults to np.std(Y)
         )
 
     estimated_params[group] = est_params
@@ -53,14 +66,64 @@ candidates = np.linspace(-4, 4, 33)
 
 for i in range(n_patients):
     true_group = i % 2
-    #patient = PatientSimulator(true_group)
 
     for policy in policies:
-        patient = PatientSimulator(true_group, params=params)
-        _, correct_t = run_patient_with_active_learning(patient, estimated_params, candidates, policy=policy, T=T)
+        # seed=i on the simulator gives every policy the same noise realisation for
+        # patient i (common random numbers), so the comparison is paired rather than
+        # confounded by which patient each policy happened to draw. seed=i on the
+        # run varies the "random" policy's probe sequence across patients -- with the
+        # default seed=0 every patient got an identical x sequence.
+        patient = PatientSimulator(true_group, params=params, seed=i)
+        _, correct_t = run_patient_with_active_learning(
+            patient, estimated_params, candidates, policy=policy, T=T, seed=i)
         correct[policy][i] = correct_t
 
 accuracy = {pol: correct[pol].mean(axis=0) for pol in policies} 
 sem = {pol: correct[pol].std(axis=0)/np.sqrt(n_patients) for pol in policies} # standard error of the mean
 
-plot_accuracy_active_learning(accuracy, sem, save_path="results/experiment2_mixed_noise_sigmaw_low.png")
+# ---- log the curves, so the numbers exist outside the PNG ------------------
+def steps_to(acc, threshold):
+    """First time step at which accuracy reaches threshold and never drops back."""
+    ok = acc >= threshold
+    if not ok.any():
+        return None
+    # walk back from the end to find the start of the final run of successes
+    t = len(acc)
+    while t > 0 and ok[t - 1]:
+        t -= 1
+    return t + 1 if t < len(acc) else None
+
+print(f"\nAccuracy per time step (n_patients={n_patients}, +/- 1 SEM):")
+header = "  t  " + "".join(f"{pol:>28}" for pol in policies)
+print(header)
+print("  " + "-" * (len(header) - 2))
+for t in range(T):
+    row = f"  {t + 1:<3}"
+    for pol in policies:
+        row += f"{accuracy[pol][t]:>21.3f} +/-{sem[pol][t]:5.3f}"
+    print(row)
+
+print("\nSummary:")
+print(f"  {'policy':<24}{'final':>8}{'mean':>8}{'>=0.90':>9}{'>=0.95':>9}{'>=0.99':>9}")
+for pol in policies:
+    a = accuracy[pol]
+    def fmt(x):
+        return f"{x:>9}" if x is not None else f"{'never':>9}"
+    print(f"  {pol:<24}{a[-1]:>8.3f}{a.mean():>8.3f}"
+          f"{fmt(steps_to(a, 0.90))}{fmt(steps_to(a, 0.95))}{fmt(steps_to(a, 0.99))}")
+print("  ('>=x' = first time step from which accuracy stays at or above x)")
+
+csv_path = f"results/experiment2_{TAG}.csv"
+cols = ["timestep"] + [f"{p}_accuracy" for p in policies] + [f"{p}_sem" for p in policies]
+table = np.column_stack(
+    [np.arange(1, T + 1)] + [accuracy[p] for p in policies] + [sem[p] for p in policies])
+np.savetxt(csv_path, table, delimiter=",", header=",".join(cols), comments="", fmt="%.6f")
+print(f"\nWrote {csv_path}")
+
+plot_accuracy_active_learning(
+    accuracy, sem,
+    save_path=f"results/experiment2_{TAG}.png",
+    title="Active probing identifies the causal pathway faster than random dosing",
+    subtitle=(f"{n_patients} patients, T={T}, mixed noise (sigma_w=0.1, sigma_e=1.0); "
+              f"bands are +/- 1 SEM; seed={SEED}"),
+)

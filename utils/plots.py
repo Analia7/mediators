@@ -278,26 +278,102 @@ def plot_mean_std(
  
     plt.close(fig)
 
-def plot_accuracy_active_learning(curves, sems=None, save_path=None):
+# Categorical slots 1-3 of the reference palette, in fixed order (never cycled).
+# These three validate on the all-pairs CVD / normal-vision gates in both modes.
+_SERIES_COLORS = ["#2a78d6", "#eb6834", "#1baf7a"]   # blue, orange, aqua
+
+# Text and chrome tokens: marks carry the series colour, text never does.
+_INK_PRIMARY   = "#0b0b0b"
+_INK_SECONDARY = "#52514e"
+_INK_MUTED     = "#8a8984"
+_GRID          = "#e8e7e4"
+_AXIS          = "#c9c8c4"
+
+
+def plot_accuracy_active_learning(curves, sems=None, save_path=None,
+                                  title=None, subtitle=None, chance=0.5):
     """
-    curves : dict like {"active": acc_active, "random": acc_random}
-    sems   : optional dict of same shape, for +/- shaded bands
+    curves   : dict like {"random": acc_random, "uncertainty sampling": acc_us}
+               Iteration order fixes the colour assignment, so a policy keeps its
+               colour even if another is dropped from the comparison.
+    sems     : optional dict of same shape, for +/- 1 SEM shaded bands
+    save_path: write a PNG here instead of showing the figure
+    title    : headline; defaults to a plain description
+    subtitle : one line of run configuration (n patients, noise regime, ...)
+    chance   : y value of the reference line, or None to omit it
     """
     T = len(next(iter(curves.values())))     # length of any curve
     steps = np.arange(1, T + 1)
 
-    plt.figure(figsize=(8, 5))
-    for label, acc in curves.items():
-        line, = plt.plot(steps, acc, label=label, lw=2)
+    fig, ax = plt.subplots(figsize=(9, 5.5))
+
+    # Recessive horizontal grid: solid hairlines one step off the surface, behind
+    # the data. Never dashed - dashing reads as "threshold" when it is just a grid.
+    ax.set_axisbelow(True)
+    ax.yaxis.grid(True, color=_GRID, lw=0.8, ls="-")
+    ax.xaxis.grid(False)
+
+    # The chance line *is* a threshold, so here the dashes are meaningful.
+    if chance is not None:
+        ax.axhline(chance, ls="--", lw=1, color=_INK_MUTED, zorder=1)
+        ax.annotate(f"chance ({chance:g})", xy=(1, chance), xytext=(9, 6),
+                    textcoords="offset points", ha="left", va="bottom",
+                    fontsize=9, color=_INK_MUTED)
+
+    for i, (label, acc) in enumerate(curves.items()):
+        colour = _SERIES_COLORS[i % len(_SERIES_COLORS)]
+        acc = np.asarray(acc)
         if sems is not None and label in sems:
-            plt.fill_between(steps, acc - sems[label], acc + sems[label],
-                             color=line.get_color(), alpha=0.2)
-    plt.axhline(0.5, ls="--", color="gray")
-    plt.xlabel("time step")
-    plt.ylabel("fraction correct")
-    plt.title(f"{T} steps")
-    plt.legend()
-    plt.tight_layout()
+            sem = np.asarray(sems[label])
+            # A wash, not a saturated block, so overlapping bands stay readable.
+            ax.fill_between(steps, acc - sem, acc + sem,
+                            color=colour, alpha=0.12, lw=0, zorder=2)
+        ax.plot(steps, acc, color=colour, lw=2, zorder=3,
+                solid_capstyle="round", solid_joinstyle="round", label=label)
+
+    ax.set_xlim(1, T)
+    lo = min(float(np.min(np.asarray(a))) for a in curves.values())
+    ax.set_ylim(min(lo - 0.04, (chance or 1.0) - 0.06), 1.02)
+
+    # Clean tick values; tabular figures because they align vertically.
+    xticks = [1] + [t for t in range(5, T + 1, 5)]
+    ax.set_xticks(xticks)
+    ax.set_yticks(np.arange(0.4, 1.01, 0.1))
+    ax.tick_params(colors=_INK_SECONDARY, labelsize=10, length=0)
+
+    ax.set_xlabel("time step", fontsize=11, color=_INK_SECONDARY, labelpad=8)
+    ax.set_ylabel("fraction correct", fontsize=11, color=_INK_SECONDARY, labelpad=8)
+
+    for side in ("top", "right"):
+        ax.spines[side].set_visible(False)
+    for side in ("left", "bottom"):
+        ax.spines[side].set_color(_AXIS)
+        ax.spines[side].set_linewidth(0.8)
+
+    if title is None:
+        title = "Group identification accuracy over time"
+    ax.set_title(title, fontsize=12, color=_INK_PRIMARY, loc="left",
+                 pad=30 if subtitle else 12)
+    if subtitle:
+        ax.annotate(subtitle, xy=(0, 1), xytext=(0, 7), xycoords="axes fraction",
+                    textcoords="offset points", ha="left", va="bottom",
+                    fontsize=10, color=_INK_SECONDARY)
+
+    # Legend always present for >=2 series; its text wears an ink token, with the
+    # short colour key beside it carrying identity.
+    # Centre-right: with the curves converging at the top and the chance rule at
+    # the bottom, this band is the one part of the plot that is reliably empty.
+    leg = ax.legend(loc="center right", fontsize=10, handlelength=1.6,
+                    borderpad=0.9, labelspacing=0.6,
+                    frameon=True, facecolor="white", edgecolor="none", framealpha=0.95)
+    for text in leg.get_texts():
+        text.set_color(_INK_SECONDARY)
+
+    fig.tight_layout()
+
     if save_path:
-        plt.savefig(save_path, dpi=150)
-    plt.show()
+        fig.savefig(save_path, dpi=200, facecolor="white")
+    else:
+        plt.show()
+
+    plt.close(fig)

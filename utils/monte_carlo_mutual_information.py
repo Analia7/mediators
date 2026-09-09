@@ -73,7 +73,7 @@ def evaluate_mutual_information(y_pred_means, y_pred_vars, y_samples, prior_1):
     return estimated_mutual_information
 
 
-def select_next_x_mutual_information(x_candidates, estimated_params, z_pred_means, z_pred_vars, prior_1=0.5, samples_size=50):
+def select_next_x_mutual_information(x_candidates, estimated_params, z_pred_means, z_pred_vars, prior_1=0.5, samples_size=50, rng=None):
     """
     Choose the next input signal x_{t+1} from a set of candidates based on the current patient data and estimated parameters.
 
@@ -91,6 +91,8 @@ def select_next_x_mutual_information(x_candidates, estimated_params, z_pred_mean
         Prior probability of belonging to group 1, P(c_n = 1).
     samples_size : int
         Number of samples to draw from the mixture distribution for mutual information estimation.
+    rng : np.random.Generator or None
+        Source of randomness for the Monte Carlo draws.
 
     Returns
     -------
@@ -105,7 +107,7 @@ def select_next_x_mutual_information(x_candidates, estimated_params, z_pred_mean
         y_pred_means, y_pred_vars = compute_predicted_means_vars(estimated_params, candidate, z_pred_means, z_pred_vars)
 
         # draw samples from the mixture distribution of y_{t+1} given the predicted means and variances
-        _, y_samples = draw_samples_from_mixture_distribution(y_pred_means, y_pred_vars, prior_1, samples_size)
+        _, y_samples = draw_samples_from_mixture_distribution(y_pred_means, y_pred_vars, prior_1, samples_size, rng=rng)
 
         # evaluate the mutual information for the candidate x_{t+1}
         mutual_information = evaluate_mutual_information(y_pred_means, y_pred_vars, y_samples, prior_1)
