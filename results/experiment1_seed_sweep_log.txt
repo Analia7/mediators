@@ -2,3 +2,11 @@ regime                    seed 0  seed 1  seed 2  seed 3  seed 4    mean     sd 
 low_noise                   1.00    1.00    1.00    1.00    1.00   1.000  0.000   44/56 50/50 49/51 50/50 46/54
 high_noise                  0.78    0.88    0.91    0.84    0.86   0.854  0.049   54/46 45/55 56/44 53/47 44/56
 mixed_noise_sigma_low       0.75    0.77    0.72    0.73    0.72   0.738  0.022   54/46 56/44 51/49 51/49 45/55
+mixed_noise_sigma_high      1.00    0.99    1.00    1.00    1.00   0.998  0.004   55/45 46/54 45/55 55/45 51/49
+gamma_high_both_groups      0.83    0.84    0.89    0.88    0.86   0.860  0.025   50/50 51/49 52/48 48/52 54/46
+gamma_low_both_groups       0.87    0.87    0.86    0.89    0.86   0.870  0.012   52/48 40/60 48/52 43/57 52/48
+gamma_high_low              1.00    1.00    1.00    0.99    1.00   0.998  0.004   38/62 52/48 57/43 46/54 60/40
+gamma_low_high              1.00    1.00    1.00    1.00    1.00   1.000  0.000   42/58 47/53 53/47 52/48 54/46
+
+Wrote results/experiment1_seed_sweep.csv  (40 rows)
+Seed-to-seed sd of our accuracy: median 0.008, max 0.049 (high_noise)
