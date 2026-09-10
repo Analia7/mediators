@@ -2,7 +2,7 @@ from utils.data_generation import generate_synthetic_samples, PatientSimulator
 from utils.plots import plot_scatter_by_group, plot_trajectories, plot_mean_std, plot_accuracy_active_learning
 from utils.em_algorithm import em_ssm
 from utils.infer_patient import infer_patient
-from utils.active_learning import run_patient_with_active_learning
+from utils.active_learning import run_patient_with_active_learning, steps_to_threshold, POLICY_LABELS
 from utils.baseline import logistic_regression_prediction
 import numpy as np
 
@@ -82,17 +82,6 @@ accuracy = {pol: correct[pol].mean(axis=0) for pol in policies}
 sem = {pol: correct[pol].std(axis=0)/np.sqrt(n_patients) for pol in policies} # standard error of the mean
 
 # ---- log the curves, so the numbers exist outside the PNG ------------------
-def steps_to(acc, threshold):
-    """First time step at which accuracy reaches threshold and never drops back."""
-    ok = acc >= threshold
-    if not ok.any():
-        return None
-    # walk back from the end to find the start of the final run of successes
-    t = len(acc)
-    while t > 0 and ok[t - 1]:
-        t -= 1
-    return t + 1 if t < len(acc) else None
-
 print(f"\nAccuracy per time step (n_patients={n_patients}, +/- 1 SEM):")
 header = "  t  " + "".join(f"{pol:>28}" for pol in policies)
 print(header)
@@ -110,7 +99,7 @@ for pol in policies:
     def fmt(x):
         return f"{x:>9}" if x is not None else f"{'never':>9}"
     print(f"  {pol:<24}{a[-1]:>8.3f}{a.mean():>8.3f}"
-          f"{fmt(steps_to(a, 0.90))}{fmt(steps_to(a, 0.95))}{fmt(steps_to(a, 0.99))}")
+          f"{fmt(steps_to_threshold(a, 0.90))}{fmt(steps_to_threshold(a, 0.95))}{fmt(steps_to_threshold(a, 0.99))}")
 print("  ('>=x' = first time step from which accuracy stays at or above x)")
 
 csv_path = f"results/experiment2_{TAG}.csv"
@@ -120,10 +109,11 @@ table = np.column_stack(
 np.savetxt(csv_path, table, delimiter=",", header=",".join(cols), comments="", fmt="%.6f")
 print(f"\nWrote {csv_path}")
 
+# Figures carry the display names; the CSV above keeps the internal identifiers.
 plot_accuracy_active_learning(
-    accuracy, sem,
+    {POLICY_LABELS[p]: accuracy[p] for p in policies},
+    {POLICY_LABELS[p]: sem[p] for p in policies},
     save_path=f"results/experiment2_{TAG}.png",
-    title="Active probing identifies the causal pathway faster than random dosing",
     subtitle=(f"{n_patients} patients, T={T}, mixed noise (sigma_w=0.1, sigma_e=1.0); "
               f"bands are +/- 1 SEM; seed={SEED}"),
 )

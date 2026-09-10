@@ -1,0 +1,451 @@
+seed,policy,timestep,accuracy,sem,em_groups_converged
+0,random,1,0.500000,0.050000,1
+0,random,2,0.620000,0.048539,1
+0,random,3,0.710000,0.045376,1
+0,random,4,0.750000,0.043301,1
+0,random,5,0.770000,0.042083,1
+0,random,6,0.790000,0.040731,1
+0,random,7,0.790000,0.040731,1
+0,random,8,0.870000,0.033630,1
+0,random,9,0.860000,0.034699,1
+0,random,10,0.830000,0.037563,1
+0,random,11,0.840000,0.036661,1
+0,random,12,0.890000,0.031289,1
+0,random,13,0.930000,0.025515,1
+0,random,14,0.930000,0.025515,1
+0,random,15,0.960000,0.019596,1
+0,random,16,0.960000,0.019596,1
+0,random,17,0.990000,0.009950,1
+0,random,18,0.970000,0.017059,1
+0,random,19,0.970000,0.017059,1
+0,random,20,0.980000,0.014000,1
+0,random,21,1.000000,0.000000,1
+0,random,22,1.000000,0.000000,1
+0,random,23,1.000000,0.000000,1
+0,random,24,1.000000,0.000000,1
+0,random,25,0.990000,0.009950,1
+0,random,26,0.980000,0.014000,1
+0,random,27,0.980000,0.014000,1
+0,random,28,0.980000,0.014000,1
+0,random,29,0.990000,0.009950,1
+0,random,30,0.980000,0.014000,1
+0,uncertainty sampling,1,0.500000,0.050000,1
+0,uncertainty sampling,2,0.620000,0.048539,1
+0,uncertainty sampling,3,0.820000,0.038419,1
+0,uncertainty sampling,4,0.930000,0.025515,1
+0,uncertainty sampling,5,0.940000,0.023749,1
+0,uncertainty sampling,6,0.960000,0.019596,1
+0,uncertainty sampling,7,0.920000,0.027129,1
+0,uncertainty sampling,8,0.940000,0.023749,1
+0,uncertainty sampling,9,0.930000,0.025515,1
+0,uncertainty sampling,10,0.950000,0.021794,1
+0,uncertainty sampling,11,0.960000,0.019596,1
+0,uncertainty sampling,12,0.970000,0.017059,1
+0,uncertainty sampling,13,0.980000,0.014000,1
+0,uncertainty sampling,14,0.990000,0.009950,1
+0,uncertainty sampling,15,0.970000,0.017059,1
+0,uncertainty sampling,16,0.980000,0.014000,1
+0,uncertainty sampling,17,0.990000,0.009950,1
+0,uncertainty sampling,18,0.980000,0.014000,1
+0,uncertainty sampling,19,0.990000,0.009950,1
+0,uncertainty sampling,20,0.990000,0.009950,1
+0,uncertainty sampling,21,0.990000,0.009950,1
+0,uncertainty sampling,22,0.990000,0.009950,1
+0,uncertainty sampling,23,0.990000,0.009950,1
+0,uncertainty sampling,24,1.000000,0.000000,1
+0,uncertainty sampling,25,1.000000,0.000000,1
+0,uncertainty sampling,26,1.000000,0.000000,1
+0,uncertainty sampling,27,1.000000,0.000000,1
+0,uncertainty sampling,28,1.000000,0.000000,1
+0,uncertainty sampling,29,1.000000,0.000000,1
+0,uncertainty sampling,30,0.990000,0.009950,1
+0,mutual information,1,0.500000,0.050000,1
+0,mutual information,2,0.620000,0.048539,1
+0,mutual information,3,0.660000,0.047371,1
+0,mutual information,4,0.750000,0.043301,1
+0,mutual information,5,0.790000,0.040731,1
+0,mutual information,6,0.850000,0.035707,1
+0,mutual information,7,0.900000,0.030000,1
+0,mutual information,8,0.890000,0.031289,1
+0,mutual information,9,0.900000,0.030000,1
+0,mutual information,10,0.930000,0.025515,1
+0,mutual information,11,0.950000,0.021794,1
+0,mutual information,12,0.960000,0.019596,1
+0,mutual information,13,0.950000,0.021794,1
+0,mutual information,14,0.970000,0.017059,1
+0,mutual information,15,0.980000,0.014000,1
+0,mutual information,16,0.970000,0.017059,1
+0,mutual information,17,0.990000,0.009950,1
+0,mutual information,18,0.970000,0.017059,1
+0,mutual information,19,0.980000,0.014000,1
+0,mutual information,20,0.990000,0.009950,1
+0,mutual information,21,0.990000,0.009950,1
+0,mutual information,22,0.990000,0.009950,1
+0,mutual information,23,0.990000,0.009950,1
+0,mutual information,24,1.000000,0.000000,1
+0,mutual information,25,1.000000,0.000000,1
+0,mutual information,26,1.000000,0.000000,1
+0,mutual information,27,1.000000,0.000000,1
+0,mutual information,28,1.000000,0.000000,1
+0,mutual information,29,1.000000,0.000000,1
+0,mutual information,30,1.000000,0.000000,1
+1,random,1,0.500000,0.050000,1
+1,random,2,0.580000,0.049356,1
+1,random,3,0.640000,0.048000,1
+1,random,4,0.690000,0.046249,1
+1,random,5,0.760000,0.042708,1
+1,random,6,0.790000,0.040731,1
+1,random,7,0.860000,0.034699,1
+1,random,8,0.860000,0.034699,1
+1,random,9,0.860000,0.034699,1
+1,random,10,0.840000,0.036661,1
+1,random,11,0.880000,0.032496,1
+1,random,12,0.900000,0.030000,1
+1,random,13,0.930000,0.025515,1
+1,random,14,0.930000,0.025515,1
+1,random,15,0.950000,0.021794,1
+1,random,16,0.940000,0.023749,1
+1,random,17,0.940000,0.023749,1
+1,random,18,0.940000,0.023749,1
+1,random,19,0.960000,0.019596,1
+1,random,20,0.960000,0.019596,1
+1,random,21,0.960000,0.019596,1
+1,random,22,0.960000,0.019596,1
+1,random,23,0.970000,0.017059,1
+1,random,24,0.970000,0.017059,1
+1,random,25,0.960000,0.019596,1
+1,random,26,0.970000,0.017059,1
+1,random,27,0.970000,0.017059,1
+1,random,28,0.970000,0.017059,1
+1,random,29,0.980000,0.014000,1
+1,random,30,0.990000,0.009950,1
+1,uncertainty sampling,1,0.500000,0.050000,1
+1,uncertainty sampling,2,0.580000,0.049356,1
+1,uncertainty sampling,3,0.680000,0.046648,1
+1,uncertainty sampling,4,0.760000,0.042708,1
+1,uncertainty sampling,5,0.820000,0.038419,1
+1,uncertainty sampling,6,0.870000,0.033630,1
+1,uncertainty sampling,7,0.920000,0.027129,1
+1,uncertainty sampling,8,0.920000,0.027129,1
+1,uncertainty sampling,9,0.950000,0.021794,1
+1,uncertainty sampling,10,0.960000,0.019596,1
+1,uncertainty sampling,11,0.990000,0.009950,1
+1,uncertainty sampling,12,0.980000,0.014000,1
+1,uncertainty sampling,13,0.980000,0.014000,1
+1,uncertainty sampling,14,0.990000,0.009950,1
+1,uncertainty sampling,15,1.000000,0.000000,1
+1,uncertainty sampling,16,1.000000,0.000000,1
+1,uncertainty sampling,17,1.000000,0.000000,1
+1,uncertainty sampling,18,1.000000,0.000000,1
+1,uncertainty sampling,19,1.000000,0.000000,1
+1,uncertainty sampling,20,1.000000,0.000000,1
+1,uncertainty sampling,21,1.000000,0.000000,1
+1,uncertainty sampling,22,1.000000,0.000000,1
+1,uncertainty sampling,23,1.000000,0.000000,1
+1,uncertainty sampling,24,1.000000,0.000000,1
+1,uncertainty sampling,25,1.000000,0.000000,1
+1,uncertainty sampling,26,1.000000,0.000000,1
+1,uncertainty sampling,27,1.000000,0.000000,1
+1,uncertainty sampling,28,1.000000,0.000000,1
+1,uncertainty sampling,29,1.000000,0.000000,1
+1,uncertainty sampling,30,1.000000,0.000000,1
+1,mutual information,1,0.500000,0.050000,1
+1,mutual information,2,0.580000,0.049356,1
+1,mutual information,3,0.670000,0.047021,1
+1,mutual information,4,0.730000,0.044396,1
+1,mutual information,5,0.760000,0.042708,1
+1,mutual information,6,0.840000,0.036661,1
+1,mutual information,7,0.860000,0.034699,1
+1,mutual information,8,0.910000,0.028618,1
+1,mutual information,9,0.910000,0.028618,1
+1,mutual information,10,0.920000,0.027129,1
+1,mutual information,11,0.930000,0.025515,1
+1,mutual information,12,0.930000,0.025515,1
+1,mutual information,13,0.940000,0.023749,1
+1,mutual information,14,0.940000,0.023749,1
+1,mutual information,15,0.920000,0.027129,1
+1,mutual information,16,0.920000,0.027129,1
+1,mutual information,17,0.940000,0.023749,1
+1,mutual information,18,0.940000,0.023749,1
+1,mutual information,19,0.950000,0.021794,1
+1,mutual information,20,0.980000,0.014000,1
+1,mutual information,21,0.980000,0.014000,1
+1,mutual information,22,0.970000,0.017059,1
+1,mutual information,23,0.980000,0.014000,1
+1,mutual information,24,0.990000,0.009950,1
+1,mutual information,25,0.980000,0.014000,1
+1,mutual information,26,0.980000,0.014000,1
+1,mutual information,27,0.990000,0.009950,1
+1,mutual information,28,0.990000,0.009950,1
+1,mutual information,29,0.990000,0.009950,1
+1,mutual information,30,1.000000,0.000000,1
+2,random,1,0.500000,0.050000,0
+2,random,2,0.570000,0.049508,0
+2,random,3,0.640000,0.048000,0
+2,random,4,0.710000,0.045376,0
+2,random,5,0.690000,0.046249,0
+2,random,6,0.730000,0.044396,0
+2,random,7,0.800000,0.040000,0
+2,random,8,0.840000,0.036661,0
+2,random,9,0.880000,0.032496,0
+2,random,10,0.870000,0.033630,0
+2,random,11,0.860000,0.034699,0
+2,random,12,0.890000,0.031289,0
+2,random,13,0.910000,0.028618,0
+2,random,14,0.900000,0.030000,0
+2,random,15,0.910000,0.028618,0
+2,random,16,0.920000,0.027129,0
+2,random,17,0.960000,0.019596,0
+2,random,18,0.950000,0.021794,0
+2,random,19,0.940000,0.023749,0
+2,random,20,0.960000,0.019596,0
+2,random,21,0.960000,0.019596,0
+2,random,22,0.970000,0.017059,0
+2,random,23,0.970000,0.017059,0
+2,random,24,0.980000,0.014000,0
+2,random,25,0.980000,0.014000,0
+2,random,26,0.980000,0.014000,0
+2,random,27,0.980000,0.014000,0
+2,random,28,0.980000,0.014000,0
+2,random,29,0.990000,0.009950,0
+2,random,30,0.980000,0.014000,0
+2,uncertainty sampling,1,0.500000,0.050000,0
+2,uncertainty sampling,2,0.570000,0.049508,0
+2,uncertainty sampling,3,0.750000,0.043301,0
+2,uncertainty sampling,4,0.770000,0.042083,0
+2,uncertainty sampling,5,0.850000,0.035707,0
+2,uncertainty sampling,6,0.860000,0.034699,0
+2,uncertainty sampling,7,0.880000,0.032496,0
+2,uncertainty sampling,8,0.920000,0.027129,0
+2,uncertainty sampling,9,0.930000,0.025515,0
+2,uncertainty sampling,10,0.950000,0.021794,0
+2,uncertainty sampling,11,0.930000,0.025515,0
+2,uncertainty sampling,12,0.960000,0.019596,0
+2,uncertainty sampling,13,0.940000,0.023749,0
+2,uncertainty sampling,14,0.980000,0.014000,0
+2,uncertainty sampling,15,0.980000,0.014000,0
+2,uncertainty sampling,16,0.980000,0.014000,0
+2,uncertainty sampling,17,0.990000,0.009950,0
+2,uncertainty sampling,18,0.990000,0.009950,0
+2,uncertainty sampling,19,0.990000,0.009950,0
+2,uncertainty sampling,20,0.970000,0.017059,0
+2,uncertainty sampling,21,0.990000,0.009950,0
+2,uncertainty sampling,22,0.980000,0.014000,0
+2,uncertainty sampling,23,0.990000,0.009950,0
+2,uncertainty sampling,24,0.990000,0.009950,0
+2,uncertainty sampling,25,0.980000,0.014000,0
+2,uncertainty sampling,26,0.990000,0.009950,0
+2,uncertainty sampling,27,0.990000,0.009950,0
+2,uncertainty sampling,28,0.990000,0.009950,0
+2,uncertainty sampling,29,1.000000,0.000000,0
+2,uncertainty sampling,30,1.000000,0.000000,0
+2,mutual information,1,0.500000,0.050000,0
+2,mutual information,2,0.570000,0.049508,0
+2,mutual information,3,0.720000,0.044900,0
+2,mutual information,4,0.730000,0.044396,0
+2,mutual information,5,0.800000,0.040000,0
+2,mutual information,6,0.870000,0.033630,0
+2,mutual information,7,0.880000,0.032496,0
+2,mutual information,8,0.880000,0.032496,0
+2,mutual information,9,0.910000,0.028618,0
+2,mutual information,10,0.940000,0.023749,0
+2,mutual information,11,0.930000,0.025515,0
+2,mutual information,12,0.940000,0.023749,0
+2,mutual information,13,0.940000,0.023749,0
+2,mutual information,14,0.930000,0.025515,0
+2,mutual information,15,0.960000,0.019596,0
+2,mutual information,16,0.950000,0.021794,0
+2,mutual information,17,0.950000,0.021794,0
+2,mutual information,18,0.930000,0.025515,0
+2,mutual information,19,0.950000,0.021794,0
+2,mutual information,20,0.950000,0.021794,0
+2,mutual information,21,0.960000,0.019596,0
+2,mutual information,22,0.960000,0.019596,0
+2,mutual information,23,0.970000,0.017059,0
+2,mutual information,24,0.960000,0.019596,0
+2,mutual information,25,0.960000,0.019596,0
+2,mutual information,26,0.960000,0.019596,0
+2,mutual information,27,0.970000,0.017059,0
+2,mutual information,28,0.980000,0.014000,0
+2,mutual information,29,0.980000,0.014000,0
+2,mutual information,30,0.980000,0.014000,0
+3,random,1,0.500000,0.050000,0
+3,random,2,0.610000,0.048775,0
+3,random,3,0.700000,0.045826,0
+3,random,4,0.750000,0.043301,0
+3,random,5,0.800000,0.040000,0
+3,random,6,0.830000,0.037563,0
+3,random,7,0.830000,0.037563,0
+3,random,8,0.910000,0.028618,0
+3,random,9,0.920000,0.027129,0
+3,random,10,0.920000,0.027129,0
+3,random,11,0.930000,0.025515,0
+3,random,12,0.960000,0.019596,0
+3,random,13,0.930000,0.025515,0
+3,random,14,0.960000,0.019596,0
+3,random,15,0.960000,0.019596,0
+3,random,16,0.950000,0.021794,0
+3,random,17,0.940000,0.023749,0
+3,random,18,0.930000,0.025515,0
+3,random,19,0.940000,0.023749,0
+3,random,20,0.970000,0.017059,0
+3,random,21,0.970000,0.017059,0
+3,random,22,0.970000,0.017059,0
+3,random,23,0.970000,0.017059,0
+3,random,24,0.980000,0.014000,0
+3,random,25,0.980000,0.014000,0
+3,random,26,0.980000,0.014000,0
+3,random,27,0.970000,0.017059,0
+3,random,28,0.980000,0.014000,0
+3,random,29,0.980000,0.014000,0
+3,random,30,0.980000,0.014000,0
+3,uncertainty sampling,1,0.500000,0.050000,0
+3,uncertainty sampling,2,0.610000,0.048775,0
+3,uncertainty sampling,3,0.810000,0.039230,0
+3,uncertainty sampling,4,0.840000,0.036661,0
+3,uncertainty sampling,5,0.900000,0.030000,0
+3,uncertainty sampling,6,0.960000,0.019596,0
+3,uncertainty sampling,7,0.940000,0.023749,0
+3,uncertainty sampling,8,0.970000,0.017059,0
+3,uncertainty sampling,9,0.990000,0.009950,0
+3,uncertainty sampling,10,0.990000,0.009950,0
+3,uncertainty sampling,11,1.000000,0.000000,0
+3,uncertainty sampling,12,1.000000,0.000000,0
+3,uncertainty sampling,13,1.000000,0.000000,0
+3,uncertainty sampling,14,1.000000,0.000000,0
+3,uncertainty sampling,15,1.000000,0.000000,0
+3,uncertainty sampling,16,1.000000,0.000000,0
+3,uncertainty sampling,17,1.000000,0.000000,0
+3,uncertainty sampling,18,1.000000,0.000000,0
+3,uncertainty sampling,19,1.000000,0.000000,0
+3,uncertainty sampling,20,1.000000,0.000000,0
+3,uncertainty sampling,21,1.000000,0.000000,0
+3,uncertainty sampling,22,1.000000,0.000000,0
+3,uncertainty sampling,23,1.000000,0.000000,0
+3,uncertainty sampling,24,1.000000,0.000000,0
+3,uncertainty sampling,25,1.000000,0.000000,0
+3,uncertainty sampling,26,1.000000,0.000000,0
+3,uncertainty sampling,27,1.000000,0.000000,0
+3,uncertainty sampling,28,1.000000,0.000000,0
+3,uncertainty sampling,29,1.000000,0.000000,0
+3,uncertainty sampling,30,1.000000,0.000000,0
+3,mutual information,1,0.500000,0.050000,0
+3,mutual information,2,0.610000,0.048775,0
+3,mutual information,3,0.800000,0.040000,0
+3,mutual information,4,0.820000,0.038419,0
+3,mutual information,5,0.860000,0.034699,0
+3,mutual information,6,0.910000,0.028618,0
+3,mutual information,7,0.900000,0.030000,0
+3,mutual information,8,0.870000,0.033630,0
+3,mutual information,9,0.900000,0.030000,0
+3,mutual information,10,0.920000,0.027129,0
+3,mutual information,11,0.940000,0.023749,0
+3,mutual information,12,0.950000,0.021794,0
+3,mutual information,13,0.950000,0.021794,0
+3,mutual information,14,0.960000,0.019596,0
+3,mutual information,15,0.980000,0.014000,0
+3,mutual information,16,0.980000,0.014000,0
+3,mutual information,17,0.990000,0.009950,0
+3,mutual information,18,1.000000,0.000000,0
+3,mutual information,19,0.990000,0.009950,0
+3,mutual information,20,0.980000,0.014000,0
+3,mutual information,21,0.980000,0.014000,0
+3,mutual information,22,0.990000,0.009950,0
+3,mutual information,23,0.990000,0.009950,0
+3,mutual information,24,0.990000,0.009950,0
+3,mutual information,25,0.990000,0.009950,0
+3,mutual information,26,0.980000,0.014000,0
+3,mutual information,27,0.980000,0.014000,0
+3,mutual information,28,1.000000,0.000000,0
+3,mutual information,29,0.990000,0.009950,0
+3,mutual information,30,0.990000,0.009950,0
+4,random,1,0.500000,0.050000,1
+4,random,2,0.540000,0.049840,1
+4,random,3,0.690000,0.046249,1
+4,random,4,0.680000,0.046648,1
+4,random,5,0.770000,0.042083,1
+4,random,6,0.790000,0.040731,1
+4,random,7,0.840000,0.036661,1
+4,random,8,0.860000,0.034699,1
+4,random,9,0.900000,0.030000,1
+4,random,10,0.930000,0.025515,1
+4,random,11,0.920000,0.027129,1
+4,random,12,0.920000,0.027129,1
+4,random,13,0.950000,0.021794,1
+4,random,14,0.960000,0.019596,1
+4,random,15,0.970000,0.017059,1
+4,random,16,0.970000,0.017059,1
+4,random,17,0.950000,0.021794,1
+4,random,18,0.940000,0.023749,1
+4,random,19,0.960000,0.019596,1
+4,random,20,0.960000,0.019596,1
+4,random,21,0.970000,0.017059,1
+4,random,22,0.980000,0.014000,1
+4,random,23,0.980000,0.014000,1
+4,random,24,0.980000,0.014000,1
+4,random,25,0.980000,0.014000,1
+4,random,26,0.970000,0.017059,1
+4,random,27,0.980000,0.014000,1
+4,random,28,0.980000,0.014000,1
+4,random,29,0.980000,0.014000,1
+4,random,30,0.980000,0.014000,1
+4,uncertainty sampling,1,0.500000,0.050000,1
+4,uncertainty sampling,2,0.540000,0.049840,1
+4,uncertainty sampling,3,0.770000,0.042083,1
+4,uncertainty sampling,4,0.850000,0.035707,1
+4,uncertainty sampling,5,0.890000,0.031289,1
+4,uncertainty sampling,6,0.900000,0.030000,1
+4,uncertainty sampling,7,0.950000,0.021794,1
+4,uncertainty sampling,8,0.980000,0.014000,1
+4,uncertainty sampling,9,0.970000,0.017059,1
+4,uncertainty sampling,10,1.000000,0.000000,1
+4,uncertainty sampling,11,0.990000,0.009950,1
+4,uncertainty sampling,12,1.000000,0.000000,1
+4,uncertainty sampling,13,1.000000,0.000000,1
+4,uncertainty sampling,14,0.990000,0.009950,1
+4,uncertainty sampling,15,1.000000,0.000000,1
+4,uncertainty sampling,16,1.000000,0.000000,1
+4,uncertainty sampling,17,1.000000,0.000000,1
+4,uncertainty sampling,18,1.000000,0.000000,1
+4,uncertainty sampling,19,1.000000,0.000000,1
+4,uncertainty sampling,20,1.000000,0.000000,1
+4,uncertainty sampling,21,1.000000,0.000000,1
+4,uncertainty sampling,22,1.000000,0.000000,1
+4,uncertainty sampling,23,1.000000,0.000000,1
+4,uncertainty sampling,24,1.000000,0.000000,1
+4,uncertainty sampling,25,1.000000,0.000000,1
+4,uncertainty sampling,26,1.000000,0.000000,1
+4,uncertainty sampling,27,1.000000,0.000000,1
+4,uncertainty sampling,28,1.000000,0.000000,1
+4,uncertainty sampling,29,1.000000,0.000000,1
+4,uncertainty sampling,30,1.000000,0.000000,1
+4,mutual information,1,0.500000,0.050000,1
+4,mutual information,2,0.540000,0.049840,1
+4,mutual information,3,0.740000,0.043863,1
+4,mutual information,4,0.810000,0.039230,1
+4,mutual information,5,0.830000,0.037563,1
+4,mutual information,6,0.870000,0.033630,1
+4,mutual information,7,0.910000,0.028618,1
+4,mutual information,8,0.940000,0.023749,1
+4,mutual information,9,0.950000,0.021794,1
+4,mutual information,10,0.940000,0.023749,1
+4,mutual information,11,0.960000,0.019596,1
+4,mutual information,12,0.950000,0.021794,1
+4,mutual information,13,0.950000,0.021794,1
+4,mutual information,14,0.970000,0.017059,1
+4,mutual information,15,0.970000,0.017059,1
+4,mutual information,16,0.980000,0.014000,1
+4,mutual information,17,0.970000,0.017059,1
+4,mutual information,18,0.980000,0.014000,1
+4,mutual information,19,0.990000,0.009950,1
+4,mutual information,20,0.990000,0.009950,1
+4,mutual information,21,0.980000,0.014000,1
+4,mutual information,22,0.990000,0.009950,1
+4,mutual information,23,1.000000,0.000000,1
+4,mutual information,24,1.000000,0.000000,1
+4,mutual information,25,1.000000,0.000000,1
+4,mutual information,26,0.990000,0.009950,1
+4,mutual information,27,0.990000,0.009950,1
+4,mutual information,28,0.980000,0.014000,1
+4,mutual information,29,0.990000,0.009950,1
+4,mutual information,30,0.990000,0.009950,1

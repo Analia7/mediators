@@ -46,3 +46,38 @@ Filenames carry the regime `TAG` set at the top of `experiment2.py`, so running 
 different regime writes alongside these rather than overwriting them. Only the
 `mixed_noise_sigmaw_low` regime has been rerun post-fix; the other two regimes in
 `archive_pre_fix/` have no current equivalent.
+
+**The figures and the CSVs name the policies differently, on purpose.** The
+figures show the display labels from `POLICY_LABELS` (`Random`,
+`Minimum entropy`, `Mutual information`); the CSV columns and the sweep's
+`policy` field keep the internal identifiers (`random`, `uncertainty sampling`,
+`mutual information`). Those identifiers also index the Monte Carlo streams, so
+renaming one would repartition the RNG and change every downstream number —
+hence the split. `Minimum entropy` is the same policy as `uncertainty sampling`,
+and the truer description of it: it probes where the expected posterior Shannon
+entropy is *lowest*.
+
+## Experiment 2 — seed sensitivity
+
+Regenerate with: `MPLBACKEND=Agg python -u experiment2_seed_sweep.py > results/experiment2_seed_sweep_log.txt 2>&1` (~8 min)
+
+| File | Contents |
+|---|---|
+| `experiment2_seed_sweep.csv` | One row per (seed, policy, timestep) over 5 seeds: accuracy, within-seed SEM across patients, and how many of that seed's 2 EM fits converged |
+| `experiment2_seed_sweep_mixed_noise_sigmaw_low.png` | Mean curve per policy across the 5 seeds, banded by ±1 **sd across seeds** — not the SEM bands of the single-seed figure |
+| `experiment2_seed_sweep_log.txt` | Per-seed steps-to-threshold, mean accuracy, and the paired gap over `random` |
+
+Each seed redraws the training set (`seed=(seed, 0)`, so its own pair of EM fits),
+plus every patient's noise and probes (`seed*100 + i`, disjoint across seeds).
+The group assignment stays `i % 2` — 50 patients per group by construction, since
+balance here is a design choice rather than something worth adding variance over.
+
+Sweep seed 0 is arranged to reproduce `experiment2.py` exactly (identical training
+seed, patient seeds 0–99), and the script asserts that against
+`experiment2_mixed_noise_sigmaw_low.csv` at the end of every run. If that
+cross-check ever reports `DIFFERS`, the two scripts have drifted apart and the
+sweep no longer describes the single-seed result.
+
+**This is the file to quote a policy comparison from.** `experiment2.py` alone
+cannot separate a better policy from a luckier training set; the `sd` and paired
+`wins` columns here can.

@@ -12,6 +12,20 @@ from utils.infer_patient import _innovations_log_likelihood
 # runs irreproducible.
 _POLICY_STREAM = {"random": 0, "uncertainty sampling": 1, "mutual information": 2}
 
+# Display names for figures. The keys above are the *identifiers*: they index the
+# Monte Carlo streams, name the CSV columns and key every stored result, so they
+# must never change -- renaming one would silently repartition the RNG streams and
+# break every comparison against a committed CSV. Relabel at the plotting layer
+# instead. "minimum entropy" is also the truer description of what that policy
+# does: it picks the probe minimising the expected posterior Shannon entropy,
+# whereas "uncertainty sampling" conventionally means probing where the model is
+# *most* uncertain.
+POLICY_LABELS = {
+    "random": "Random",
+    "uncertainty sampling": "Minimum entropy",
+    "mutual information": "Mutual information",
+}
+
 def class_posterior(X, Y, estimated_params, prior_1=0.5):
     X = np.asarray(X)
     Y = np.asarray(Y)
@@ -70,6 +84,25 @@ class _OnlineSSM:
         K = (p['beta'] * P_pred) / S
         self.z = z_pred + K * v
         self.P = (1 - K * p['beta']) * P_pred
+
+
+def steps_to_threshold(accuracy, threshold):
+    """
+    First time step at which an accuracy curve reaches `threshold` and never
+    drops back below it, 1-indexed to match the figures. None if it never does.
+
+    Sustained rather than first-crossing on purpose: with 50-100 patients a
+    single curve wobbles by ~1/n per step, so a first crossing can be one
+    patient flipping. Shared by experiment2.py and its seed sweep, which have to
+    quote the same number.
+    """
+    ok = np.asarray(accuracy) >= threshold
+    if not ok.any():
+        return None
+    t = len(ok)
+    while t > 0 and ok[t - 1]:
+        t -= 1
+    return t + 1 if t < len(ok) else None
 
 
 def run_patient_with_active_learning(patient, estimated_params, candidates,

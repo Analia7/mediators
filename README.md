@@ -30,6 +30,7 @@ can *actively choosing* `x_t` identify it in fewer time steps than random dosing
 | `experiment1.py` | Classification accuracy across 8 noise / γ regimes |
 | `experiment2.py` | Active-learning policy comparison; writes `results/*.png` + `*.csv` |
 | `experiment1_seed_sweep.py` | Refits experiment 1 across 5 seeds to measure how much of each regime's accuracy is just the data draw |
+| `experiment2_seed_sweep.py` | Reruns experiment 2 across 5 seeds to put a spread on the policy comparison; seed 0 reproduces `experiment2.py` exactly, and the script checks that |
 
 **The three phases.** (1) *Training* — EM per group, labels known. (2)
 *Classification* — run the filter under both models, compare marginal
@@ -46,6 +47,7 @@ PY=~/RDS/miniconda3/envs/hyperparameters/bin/python
 MPLBACKEND=Agg $PY -u experiment2.py           > results/experiment2_log.txt 2>&1   # ~90 s
 MPLBACKEND=Agg $PY -u experiment1.py           > results/experiment1_log.txt 2>&1
 MPLBACKEND=Agg $PY -u experiment1_seed_sweep.py > results/experiment1_seed_sweep_log.txt 2>&1
+MPLBACKEND=Agg $PY -u experiment2_seed_sweep.py > results/experiment2_seed_sweep_log.txt 2>&1   # ~8 min
 ```
 
 All outputs land in `results/` — see **`results/README.md`** for what each file
@@ -159,6 +161,47 @@ hairline grid, dashing reserved for the chance threshold, text in ink tokens
 rather than series colours, and a subtitle carrying `n`, `T`, the noise regime,
 the band definition and the seed so the figure is self-describing.
 
+*Policy display names are separate from policy identifiers.* Figures label the
+policies `Random` / `Minimum entropy` / `Mutual information` via `POLICY_LABELS`
+in `utils/active_learning.py`, while the identifiers used as dict keys, CSV
+columns and — critically — Monte Carlo stream indices stay lowercase and
+unchanged. `Minimum entropy` describes what the policy does (it minimises the
+expected posterior Shannon entropy); "uncertainty sampling" conventionally means
+the opposite, probing where the model is least certain.
+
+*`plot_trajectories` is now a predicted-vs-actual figure.* It draws **one column
+per group** instead of overlaying the groups on shared axes — the columns hold
+*different patients*, so the old layout invited a comparison that means nothing,
+and four noisy lines per axis at `T = 50` was unreadable. Inside a column the
+encoding is fixed and identical in every panel: blue solid = actual, orange
+dashed = the fitted model's prediction, orange wash = the ±1 SD predictive band.
+The band is the point of the rewrite — the prediction is open-loop from `x`
+alone, so `y` carries `σ_e ≈ 0.9` of observation noise that no parameter estimate
+can track, and the mean line alone makes an honest fit look bad. Each panel is
+annotated with its RMSE and the share of actual points inside the band, and rows
+share a y-scale so the columns stay comparable.
+
+## Notebook outputs refreshed 2026-09-10
+
+`active_discovery_of_latent_dynamic_mediators.ipynb` was re-executed top to
+bottom on the fixed code (kernel `hyperparameters`, `SEED = 0`), replacing
+outputs that predated every fix above. What changed:
+
+| | Stale output | Refreshed |
+|---|---|---|
+| Group 1 `λ̂` | 0.14 | 0.29 (true 0.40; group 0: 0.73 against 0.80) |
+| Our approach | 0.80 | **0.78** |
+| Baseline, full series | 0.55 | 0.42 |
+| Baseline, moments | 0.68 | 0.48 |
+| Active learning | flat plateaus, `divide by zero` warnings | all three policies reach 1.0; both active ones lead `random` from ~step 3 until it catches up near step 20 |
+
+The accuracy gap over the baseline therefore *widens* — the baseline was the main
+beneficiary of the old numbers, and it is the weak component (see limitations).
+Two things in the refreshed output are expected rather than wrong: EM warns
+non-convergence for training group 1 (`max_iter=1000`, last change ~2e-4) because
+it is crawling the scale ridge, and the α̂/β̂/σ̂_w it reports for either group are
+individually unidentified — read `λ`, `(βα+γ)` and the noise moments instead.
+
 ## Known limitations
 
 - **Only 5 of the 6 parameters are identifiable.** Substituting the state
@@ -186,10 +229,6 @@ the band definition and the seed so the figure is self-describing.
   `C`, and give the moments variant a lag-1 *cross*-covariance
   `cov(x_{t-1}, y_t)`, which is precisely the mediation signal. The headline
   comparison is vulnerable until then.
-- **The notebook's committed outputs are stale.** Its *source* now carries the
-  same seeds and fixes as the scripts, but the stored outputs were produced before
-  any of them (`divide by zero` warnings and all), so the figures and the 0.80
-  accuracy in it are not what the code now produces. It needs re-executing.
 - **EM and inference disagree about the initial state.** EM now uses
   `z_{-1} = 0` exactly (correct — it is what the generators do), but
   `kalman_filter`, `infer_patient` and `_innovations_log_likelihood` still default
