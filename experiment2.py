@@ -114,6 +114,4 @@ plot_accuracy_active_learning(
     {POLICY_LABELS[p]: accuracy[p] for p in policies},
     {POLICY_LABELS[p]: sem[p] for p in policies},
     save_path=f"results/experiment2_{TAG}.png",
-    subtitle=(f"{n_patients} patients, T={T}, mixed noise (sigma_w=0.1, sigma_e=1.0); "
-              f"bands are +/- 1 SEM; seed={SEED}"),
 )

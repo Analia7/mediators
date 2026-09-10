@@ -182,14 +182,10 @@ print(f"\nWrote {path}  ({len(rows)} rows)")
 mean_curves = {pol: curves[pol].mean(axis=0) for pol in POLICIES}
 sd_curves = {pol: curves[pol].std(axis=0, ddof=1) for pol in POLICIES}
 # Figures carry the display names; the CSV above keeps the internal identifiers.
-# Subtitle kept under ~100 characters: the plot is 9in wide and longer lines run
-# off the right edge rather than wrapping.
 plot_accuracy_active_learning(
     {POLICY_LABELS[p]: mean_curves[p] for p in POLICIES},
     {POLICY_LABELS[p]: sd_curves[p] for p in POLICIES},
     save_path=f"results/experiment2_seed_sweep_{TAG}.png",
-    subtitle=(f"mean of seeds {min(SEEDS)}-{max(SEEDS)}, {N_PATIENTS} patients each, "
-              f"T={T}, sigma_w=0.1 sigma_e=1.0; bands +/- 1 sd across seeds"),
 )
 print(f"Wrote results/experiment2_seed_sweep_{TAG}.png")
 

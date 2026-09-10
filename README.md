@@ -157,17 +157,25 @@ an **identical** `x` sequence, which understated the baseline.
 signature and gains `title` / `subtitle` / `chance`. Fixed categorical palette
 (assigned in dict order, never cycled, so a policy keeps its colour if another is
 dropped), 2px round-capped lines, error bands as a 12% wash, recessive solid
-hairline grid, dashing reserved for the chance threshold, text in ink tokens
-rather than series colours, and a subtitle carrying `n`, `T`, the noise regime,
-the band definition and the seed so the figure is self-describing.
+hairline grid, dashing reserved for the chance threshold, and text in ink tokens
+rather than series colours.
+
+*Titles and subtitles are opt-in.* Every figure here is captioned in a document,
+so `plot_scatter_by_group`, `plot_mean_std`, `plot_trajectories` and
+`plot_accuracy_active_learning` all draw no title and no subtitle unless one is
+passed. What the figure must carry itself stays on the figure: axis and row
+labels, the per-column headings (`Group 0 · Patient 3 (correct)`), the legend,
+and the per-panel log-likelihood / coverage annotations. Run configuration —
+`n`, `T`, the regime, the seed, the band definition — belongs to the caption, and
+is recorded in the CSVs and logs under `results/` either way.
 
 *Policy display names are separate from policy identifiers.* Figures label the
-policies `Random` / `Minimum entropy` / `Mutual information` via `POLICY_LABELS`
-in `utils/active_learning.py`, while the identifiers used as dict keys, CSV
-columns and — critically — Monte Carlo stream indices stay lowercase and
-unchanged. `Minimum entropy` describes what the policy does (it minimises the
-expected posterior Shannon entropy); "uncertainty sampling" conventionally means
-the opposite, probing where the model is least certain.
+policies `Random selection` / `Minimum entropy` / `Mutual information` via
+`POLICY_LABELS` in `utils/active_learning.py`, while the identifiers used as
+dict keys, CSV columns and — critically — Monte Carlo stream indices stay
+lowercase and unchanged. `Minimum entropy` describes what the policy does (it
+minimises the expected posterior Shannon entropy); "uncertainty sampling"
+conventionally means the opposite, probing where the model is least certain.
 
 *`plot_trajectories` is now a predicted-vs-actual figure.* It draws **one column
 per group** instead of overlaying the groups on shared axes — the columns hold
@@ -177,9 +185,27 @@ encoding is fixed and identical in every panel: blue solid = actual, orange
 dashed = the fitted model's prediction, orange wash = the ±1 SD predictive band.
 The band is the point of the rewrite — the prediction is open-loop from `x`
 alone, so `y` carries `σ_e ≈ 0.9` of observation noise that no parameter estimate
-can track, and the mean line alone makes an honest fit look bad. Each panel is
-annotated with its RMSE and the share of actual points inside the band, and rows
-share a y-scale so the columns stay comparable.
+can track, and the mean line alone makes an honest fit look bad. Rows share a
+y-scale so the columns stay comparable.
+
+`x_t` is not plotted — it is i.i.d. noise in this generator, so its own panel
+says nothing, and it is implicit in both predictions anyway. Each panel is
+annotated with a log-likelihood and the share of actual points inside the band,
+and the two rows' likelihoods are **different quantities**: the observation row
+gives the marginal `log p(y_{1:T} | M_j)` from the Kalman innovations — exactly
+what `infer_patient` compares, so with a uniform prior the difference between two
+columns is the classification's log-odds — while the latent row gives
+`log p(z_{1:T} | M_j)` for the *true* path under the drawn predictive, since a
+latent series has no marginal likelihood to quote. The annotation names the
+variable (`log p(y)`, `log p(z)`) so the two are not read as comparable.
+
+Column headings carry the classifier's verdict in parentheses: `(correct)` when
+the column's model, the MAP label from that same likelihood comparison, and the
+patient's true group all agree, `(incorrect)` otherwise. On a figure of one
+patient per group that reads as whether the patient was classified correctly; on
+one patient under both models it marks which column the likelihood ratio picked
+and whether it was right. When `groups` holds the model rather than the patient's
+group — the duplicated-patient case — pass `true_group=`.
 
 ## Notebook outputs refreshed 2026-09-10
 

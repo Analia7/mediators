@@ -3,6 +3,8 @@ import numpy as np
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 
+from utils.infer_patient import _innovations_log_likelihood
+
 
 # Categorical slots 1-3 of the reference palette, in fixed order (never cycled).
 # These three validate on the all-pairs CVD / normal-vision gates in both modes.
@@ -27,7 +29,7 @@ def plot_scatter_by_group(
     Y,
     groups,
     group_labels=None,
-    xlabel="Input Signal X",
+    xlabel="Input signal X",
     ylabel="Observation Y",
     title=None,
     figsize=(12, 6),
@@ -142,13 +144,51 @@ def _predict_trajectories(X_patient, params):
     return Z_mean, np.sqrt(Z_var), Y_mean, np.sqrt(Y_var)
 
 
-def _panel_stats(actual, mean, sd, band_sd):
-    """RMSE of the prediction, and the share of actual points inside the band."""
-    rmse = float(np.sqrt(np.mean((actual - mean) ** 2)))
-    if np.all(sd <= 0):
-        return f"RMSE {rmse:.2f}"
+def _predictive_log_lik(actual, mean, sd):
+    """
+    log p(actual | model) under the plotted open-loop predictive Gaussian,
+    summed over t. Used for the latent row, where there is no observed series
+    and so no marginal likelihood to quote -- only how probable the true path
+    is under what the model predicted.
+    """
+    var = np.asarray(sd, dtype=float) ** 2
+    return float(-0.5 * np.sum(np.log(2 * np.pi * var) + (actual - mean) ** 2 / var))
+
+
+def _panel_stats(symbol, log_lik, actual, mean, sd, band_sd):
+    """
+    The panel's log-likelihood, and the share of actual points in the band.
+
+    The variable is named in the annotation -- log p(y) is a marginal likelihood
+    and log p(z) a density against ground truth, so the two rows' numbers are
+    not comparable and should not look as though they are.
+    """
     covered = float(np.mean(np.abs(actual - mean) <= band_sd * sd))
-    return f"RMSE {rmse:.2f}   ·   {covered:.0%} inside the band"
+    return f"log p({symbol}) {log_lik:+.1f}   ·   {covered:.0%} inside the band"
+
+
+def _classifier_verdict(x, y, estimated_params, column_group, true_group):
+    """
+    Whether this column's model is the one the evidence picks for this patient,
+    *and* whether that pick is the truth — the same comparison `infer_patient`
+    makes, so the heading agrees with the reported classification.
+
+    Correct means all three agree: the column's model, the MAP label, and the
+    patient's actual group. So on a figure of one patient under both models the
+    winning column reads correct and the other incorrect, while on a figure of
+    one patient per group each column reads whether that patient was classified
+    correctly. Returns None when the comparison cannot be made (fewer than two
+    models, or params without the noise scales the likelihood needs).
+    """
+    if len(estimated_params) < 2 or true_group is None:
+        return None
+    if not all("sigma_w" in p and "sigma_e" in p for p in estimated_params.values()):
+        return None
+
+    log_liks = {group: _innovations_log_likelihood(y, x, params)
+                for group, params in estimated_params.items()}
+    map_label = max(log_liks, key=log_liks.get)      # equal priors, as infer_patient
+    return column_group == map_label == true_group
 
 
 def plot_trajectories(
@@ -156,10 +196,11 @@ def plot_trajectories(
     Z,
     Y,
     groups,
+    true_group=None,
     sample_indices=None,
     group_labels=None,
     estimated_params=None,
-    xlabel="time step",
+    xlabel="Time step",
     title=None,
     subtitle=None,
     figsize=None,
@@ -170,30 +211,49 @@ def plot_trajectories(
     """
     Predicted vs. actual trajectories for one sample patient per group.
 
-    Small multiples: one **column per group**, three stacked rows (input x_t,
-    latent z_t, observation y_t). Groups get their own column rather than
-    sharing an axis, because the columns hold *different patients* — overlaying
-    them invites a comparison that means nothing, and at T=50 four noisy lines
-    per axis is a hairball. Rows share a y-scale so the columns stay comparable.
+    Small multiples: one **column per group**, two stacked rows (latent z_t,
+    observation y_t). Groups get their own column rather than sharing an axis,
+    because the columns hold *different patients* — overlaying them invites a
+    comparison that means nothing, and at T=50 four noisy lines per axis is a
+    hairball. Rows share a y-scale so the columns stay comparable. `x_t` is not
+    drawn: it is i.i.d. noise here, so its own panel says nothing, and it is
+    already implicit in both predictions.
 
-    Within a column the colour encoding is fixed and reads the same in every
-    panel: **blue solid = actual**, **orange dashed = the fitted model's
-    prediction**, with an orange wash for the +/- band_sd predictive band. The
-    input row is a single grey series — context, not a comparison.
+    Within a column the colour encoding is fixed and reads the same in both
+    panels: **blue solid = actual**, **orange dashed = the fitted model's
+    prediction**, with an orange wash for the +/- band_sd predictive band.
+
+    Each panel is annotated with a log-likelihood, and the two are *different
+    quantities* by necessity:
+
+      * observation row — the marginal `log p(y_{1:T} | M_j)` from the Kalman
+        innovations, i.e. exactly what `infer_patient` compares between the two
+        models to pick a group. With a uniform prior the difference between the
+        two columns' values is the classification's log-odds.
+      * latent row — `log p(z_{1:T} | M_j)` of the *true* path under the drawn
+        open-loop predictive. z is latent, so there is no marginal likelihood to
+        quote; this scores the prediction against ground truth, which only
+        simulation makes available.
 
     Parameters
     ----------
     X, Z, Y : array-like, shape (n_patients, T)
-        Input signals, ground-truth latent states, and observations.
+        Input signals, ground-truth latent states, and observations. X is not
+        plotted, but drives the prediction and the observation-row likelihood.
     groups : array-like, shape (n_patients,)
         Group label per patient. One column is drawn per distinct value.
+    true_group : int, optional
+        The plotted patient's actual group, for the `(correct)` / `(incorrect)`
+        mark on the column headings. Needed only when `groups` does not carry it
+        — showing one patient under both models duplicates the patient and puts
+        the *model* index in `groups`. Defaults to reading it from `groups`.
     sample_indices : dict, optional
         Mapping from group value to the patient index to plot.
         e.g. {0: 5, 1: 12} plots patient 5 for group 0, patient 12 for group 1.
         Defaults to the first patient in each group.
     group_labels : dict, optional
         Mapping from group value to the column heading, e.g.
-        {0: "Control", 1: "Treatment"}. Defaults to "Group {value} · patient
+        {0: "Control", 1: "Treatment"}. Defaults to "Group {value} · Patient
         {index}". Pass this when the columns are not different patients — the
         same patient scored under both fitted models, say.
     estimated_params : dict, optional
@@ -207,9 +267,9 @@ def plot_trajectories(
     title : str, optional
         Headline. Defaults to None — no title, on the assumption that a caption
         carries it.
-    subtitle : str or False, optional
-        One line of context under the title. Defaults to an auto-generated line;
-        pass False to suppress it.
+    subtitle : str, optional
+        One line of context under the title. Defaults to None — no subtitle, on
+        the assumption that a caption carries it.
     figsize : tuple, optional
         Figure size as (width, height). Defaults to a width that scales with the
         number of columns.
@@ -235,10 +295,10 @@ def plot_trajectories(
     show_pred = bool(estimated_params)
 
     if figsize is None:
-        figsize = (5.6 * n_cols + 1.0, 7.2)
+        figsize = (5.6 * n_cols + 1.0, 5.4)
 
     fig, axes = plt.subplots(
-        3, n_cols, figsize=figsize, sharex=True, sharey="row", squeeze=False
+        2, n_cols, figsize=figsize, sharex=True, sharey="row", squeeze=False
     )
 
     pending_labels = []
@@ -252,21 +312,33 @@ def plot_trajectories(
             else group_indices[0]
         )
 
-        ax_x, ax_z, ax_y = axes[0][col], axes[1][col], axes[2][col]
-
-        # --- input: one grey series, the driver the other two rows respond to
-        ax_x.plot(t, X[idx], color=_INK_SECONDARY, lw=1.3, alpha=0.85,
-                  solid_capstyle="round", solid_joinstyle="round", zorder=3)
+        ax_z, ax_y = axes[0][col], axes[1][col]
 
         params = estimated_params.get(group) if show_pred else None
         if params is not None:
             Z_mean, Z_sd, Y_mean, Y_sd = _predict_trajectories(X[idx], params)
+            # Two different log-likelihoods, because the two rows are different
+            # kinds of quantity. y is observed, so its row quotes the *marginal*
+            # log p(y_{1:T} | M_j) from the Kalman innovations -- the statistic
+            # infer_patient compares to pick a group, so the number in the figure
+            # is the number that decides the classification. z is latent and has
+            # no marginal likelihood; its row scores the true path against the
+            # open-loop predictive that is drawn.
+            # Both need the noise scales: without them the predictive has no
+            # spread, so there is no density to score. Guard the computation, not
+            # just the annotation -- a zero variance divides by zero first.
+            scored = ("sigma_w" in params and "sigma_e" in params
+                      and np.all(Z_sd > 0) and np.all(Y_sd > 0))
+            log_lik_z = _predictive_log_lik(Z[idx], Z_mean, Z_sd) if scored else None
+            log_lik_y = (_innovations_log_likelihood(Y[idx], X[idx], params)
+                         if scored else None)
         else:
             Z_mean = Z_sd = Y_mean = Y_sd = None
+            log_lik_z = log_lik_y = None
 
-        for ax, actual, mean, sd in (
-            (ax_z, Z[idx], Z_mean, Z_sd),
-            (ax_y, Y[idx], Y_mean, Y_sd),
+        for symbol, ax, actual, mean, sd, log_lik in (
+            ("z", ax_z, Z[idx], Z_mean, Z_sd, log_lik_z),
+            ("y", ax_y, Y[idx], Y_mean, Y_sd, log_lik_y),
         ):
             if mean is not None and np.any(sd > 0):
                 # A wash, not a saturated block: the actual line stays readable
@@ -278,8 +350,9 @@ def plot_trajectories(
             if mean is not None:
                 ax.plot(t, mean, color=_MODEL_COLOUR, lw=1.8, ls="--",
                         dash_capstyle="round", zorder=3)
+            if log_lik is not None:
                 ax.annotate(
-                    _panel_stats(actual, mean, sd, band_sd),
+                    _panel_stats(symbol, log_lik, actual, mean, sd, band_sd),
                     xy=(0, 1), xytext=(4, -5), xycoords="axes fraction",
                     textcoords="offset points", ha="left", va="top",
                     fontsize=9, color=_INK_SECONDARY, zorder=6,
@@ -298,20 +371,30 @@ def plot_trajectories(
             t_star = int(np.argmax(np.abs(gap)))
             actual_is_above = gap[t_star] > 0
             pending_labels = [
-                (ax_z, t_star, Z[idx][t_star], "actual", actual_is_above),
-                (ax_z, t_star, Z_mean[t_star], "predicted", not actual_is_above),
+                (ax_z, t_star, Z[idx][t_star], "Actual", actual_is_above),
+                (ax_z, t_star, Z_mean[t_star], "Predicted", not actual_is_above),
             ]
 
         heading = (
             group_labels[group]
             if group_labels and group in group_labels
-            else f"Group {group} · patient {idx}"
+            else f"Group {group} · Patient {idx}"
         )
-        ax_x.set_title(heading, fontsize=11, color=_INK_PRIMARY, loc="left", pad=8)
+        if show_pred:
+            # groups[idx] is the column's model, which is the patient's true
+            # group only when the columns really are different patients; pass
+            # true_group when they are not.
+            verdict = _classifier_verdict(
+                X[idx], Y[idx], estimated_params, group,
+                groups[idx] if true_group is None else true_group,
+            )
+            if verdict is not None:
+                heading += " (correct)" if verdict else " (incorrect)"
+        ax_z.set_title(heading, fontsize=11, color=_INK_PRIMARY, loc="left", pad=8)
 
     # --- chrome: recessive grid, a zero rule, ink-token text, two spines
-    row_labels = ("input  $x_t$", "latent  $z_t$", "observation  $y_t$")
-    for row in range(3):
+    row_labels = ("Latent  $z_t$", "Observation  $y_t$")
+    for row in range(2):
         for col in range(n_cols):
             ax = axes[row][col]
             ax.set_axisbelow(True)
@@ -328,22 +411,12 @@ def plot_trajectories(
             if col == 0:
                 ax.set_ylabel(row_labels[row], fontsize=10.5,
                               color=_INK_SECONDARY, labelpad=8)
-            if row == 2:
+            if row == 1:
                 ax.set_xlabel(xlabel, fontsize=10.5, color=_INK_SECONDARY,
                               labelpad=6)
 
-    # Untitled by default, like the other figures here: the caption carries the
-    # headline. The subtitle is not a title -- it holds run detail (T, what the
-    # prediction is) that nothing else in the figure records -- so it stays, and
-    # becomes the top line. Pass title= to add one, subtitle=False to drop it.
-    if subtitle is None:
-        subtitle = (
-            f"one patient per group · T = {T} · the prediction is open-loop from "
-            f"$x$ alone, so the band (±{band_sd:g} SD) is what to judge it against"
-            if show_pred
-            else f"one patient per group · T = {T} · ground truth"
-        )
-
+    # No title and no subtitle by default: the caption carries both. Either can
+    # be passed in for a standalone figure.
     if title:
         fig.suptitle(title, fontsize=13, color=_INK_PRIMARY, x=0.008, ha="left",
                      y=0.992, va="top")
@@ -358,9 +431,9 @@ def plot_trajectories(
     # single series, named by its row label, so it stays out of the key.
     if show_pred:
         handles = [
-            Line2D([], [], color=_ACTUAL_COLOUR, lw=1.8, label="actual"),
+            Line2D([], [], color=_ACTUAL_COLOUR, lw=1.8, label="Actual"),
             Line2D([], [], color=_MODEL_COLOUR, lw=1.8, ls="--",
-                   label="model prediction"),
+                   label="Model prediction"),
         ]
         if any(
             "sigma_w" in p or "sigma_e" in p for p in estimated_params.values()
@@ -370,7 +443,7 @@ def plot_trajectories(
                 # than the band, and a wash that reads correctly at panel size
                 # disappears at legend size.
                 Patch(facecolor=_MODEL_COLOUR, alpha=0.26,
-                      label=f"prediction ±{band_sd:g} SD")
+                      label=f"Prediction ±{band_sd:g} SD")
             )
         leg = fig.legend(handles=handles, loc="upper right",
                          bbox_to_anchor=(0.998, 0.995), ncol=len(handles),
@@ -513,7 +586,8 @@ def plot_accuracy_active_learning(curves, sems=None, save_path=None,
     sems     : optional dict of same shape, for +/- 1 SEM shaded bands
     save_path: write a PNG here instead of showing the figure
     title    : headline; defaults to a plain description
-    subtitle : one line of run configuration (n patients, noise regime, ...)
+    subtitle : one line of run configuration (n patients, noise regime, ...);
+               None by default, on the assumption a caption carries it
     chance   : y value of the reference line, or None to omit it
     """
     T = len(next(iter(curves.values())))     # length of any curve
@@ -530,7 +604,7 @@ def plot_accuracy_active_learning(curves, sems=None, save_path=None,
     # The chance line *is* a threshold, so here the dashes are meaningful.
     if chance is not None:
         ax.axhline(chance, ls="--", lw=1, color=_INK_MUTED, zorder=1)
-        ax.annotate(f"chance ({chance:g})", xy=(1, chance), xytext=(9, 6),
+        ax.annotate(f"Chance ({chance:g})", xy=(1, chance), xytext=(9, 6),
                     textcoords="offset points", ha="left", va="bottom",
                     fontsize=9, color=_INK_MUTED)
 

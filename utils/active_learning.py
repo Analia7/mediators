@@ -21,7 +21,7 @@ _POLICY_STREAM = {"random": 0, "uncertainty sampling": 1, "mutual information": 
 # whereas "uncertainty sampling" conventionally means probing where the model is
 # *most* uncertain.
 POLICY_LABELS = {
-    "random": "Random",
+    "random": "Random selection",
     "uncertainty sampling": "Minimum entropy",
     "mutual information": "Mutual information",
 }

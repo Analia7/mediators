@@ -38,7 +38,7 @@ Regenerate with: `MPLBACKEND=Agg python -u experiment2.py > results/experiment2_
 
 | File | Contents |
 |---|---|
-| `experiment2_mixed_noise_sigmaw_low.png` | The accuracy-vs-timestep figure, ±1 SEM bands |
+| `experiment2_mixed_noise_sigmaw_low.png` | The accuracy-vs-timestep figure, ±1 SEM bands. Untitled and unsubtitled — `n`, `T`, the regime and the seed are in the log beside it, for the caption |
 | `experiment2_mixed_noise_sigmaw_low.csv` | Accuracy and SEM per timestep for all three policies — the numbers behind the figure |
 | `experiment2_log.txt` | Full stdout: EM estimates, per-timestep table, steps-to-threshold summary |
 
@@ -48,7 +48,7 @@ different regime writes alongside these rather than overwriting them. Only the
 `archive_pre_fix/` have no current equivalent.
 
 **The figures and the CSVs name the policies differently, on purpose.** The
-figures show the display labels from `POLICY_LABELS` (`Random`,
+figures show the display labels from `POLICY_LABELS` (`Random selection`,
 `Minimum entropy`, `Mutual information`); the CSV columns and the sweep's
 `policy` field keep the internal identifiers (`random`, `uncertainty sampling`,
 `mutual information`). Those identifiers also index the Monte Carlo streams, so
