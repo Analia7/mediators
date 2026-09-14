@@ -208,3 +208,7 @@ __marimo__/
 
 # Windows Explorer thumbnail cache
 Thumbs.db
+
+# Editor / Windows temp artifacts
+*.TMP
+*~RF*.TMP

@@ -290,8 +290,8 @@ MPLBACKEND=Agg $PY -u experiment1_seed_sweep.py > results/experiment1_seed_sweep
 MPLBACKEND=Agg $PY -u experiment2_seed_sweep.py > results/experiment2_seed_sweep_log.txt 2>&1   # ~8 min
 ```
 
-All outputs land in `results/` — see **`results/README.md`** for what each file
-contains. Pre-fix outputs are quarantined in `results/archive_pre_fix/`.
+All outputs land in `results/`. Everything there was generated after the
+correctness fixes; the pre-fix outputs have been deleted.
 
 `experiment2.py` also logs the accuracy curves to `results/experiment2_<TAG>.csv`
 and prints a per-timestep table plus steps-to-threshold summary.
