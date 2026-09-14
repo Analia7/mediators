@@ -59,7 +59,7 @@ $\mathbb{E}[z_1 z_0] = 0$. The same pass returns the marginal log-likelihood
 $\log p(y_{1:T})$ from the innovations, which is what the convergence check
 monitors.
 
-**M-step.** Maximise the expectation $Q(\theta_j \mid \theta_j^{\text{old}})$ above
+**M-step.** Maximise the expected complete-data log-likelihood $Q(\theta_j \mid \theta_j^{\text{old}})$
 to estimate the parameters. To ease notation, the subscript $j$ is dropped below.
 **All sums run over every transition $t = 1, \ldots, T$ and all $N$ patients in
 the group**, with the $t = 1$ term contributing through $z_0 = 0$.
@@ -69,13 +69,13 @@ equations to zero yields the $2 \times 2$ linear system
 
 $$
 \begin{bmatrix}
-\sum x_t^2 & \sum x_t\, \mathbb{E}[z_{t-1}] \\[4pt]
+\sum x_t^2 & \sum x_t\, \mathbb{E}[z_{t-1}] \\
 \sum x_t\, \mathbb{E}[z_{t-1}] & \sum \mathbb{E}[z_{t-1}^2]
 \end{bmatrix}
 \begin{bmatrix} \alpha \\ \lambda \end{bmatrix}
 =
 \begin{bmatrix}
-\sum x_t\, \mathbb{E}[z_t] \\[4pt]
+\sum x_t\, \mathbb{E}[z_t] \\
 \sum \mathbb{E}[z_t z_{t-1}]
 \end{bmatrix}.
 $$
@@ -110,13 +110,13 @@ $y_t - \beta z_t - \gamma x_t$: the linear system
 
 $$
 \begin{bmatrix}
-\sum \mathbb{E}[z_t^2] & \sum x_t\, \mathbb{E}[z_t] \\[4pt]
+\sum \mathbb{E}[z_t^2] & \sum x_t\, \mathbb{E}[z_t] \\
 \sum x_t\, \mathbb{E}[z_t] & \sum x_t^2
 \end{bmatrix}
 \begin{bmatrix} \beta \\ \gamma \end{bmatrix}
 =
 \begin{bmatrix}
-\sum y_t\, \mathbb{E}[z_t] \\[4pt]
+\sum y_t\, \mathbb{E}[z_t] \\
 \sum y_t\, x_t
 \end{bmatrix},
 $$
@@ -138,7 +138,7 @@ For each patient $n$:
 1. Run the Kalman filter to infer $z_{1:T}$ under **both** models, $c_n = 0$ and
    $c_n = 1$, accumulating the marginal likelihood $p^j(y_{1:T})$ of each.
 2. Infer $c_n$ from those marginal likelihoods. Under a uniform prior the
-   normalised marginal likelihood *is* the class probability
+   normalised marginal likelihood *is* the class probability.
 
 
 ### Phase 3 — active sampling
@@ -169,19 +169,41 @@ has no closed form and is approximated by Monte Carlo.
 KF variances $P^{(c)}_{t-1|t-1}$, sample size $N$, candidate inputs $\mathcal{X}$.
 
 1. Compute the predictive variance for each group $c \in \{0, 1\}$:
-   $$S^{(c)}_{t|t-1} \gets \beta_c^2 \big( \lambda_c^2 P^{(c)}_{t-1|t-1} + \sigma_{w,c}^2 \big) + \sigma_{e,c}^2.$$
-2. For each candidate $x_t \in \mathcal{X}$:
-   1. Compute the predictive mean for each group $c \in \{0, 1\}$:
-      $$\hat{y}^{(c)}_{t|t-1} \gets (\beta_c \alpha_c + \gamma_c)\, x_t + \beta_c \lambda_c \hat{z}^{(c)}_{t-1|t-1}.$$
-   2. Draw $N$ samples $\{y^{(s)}_t\}_{s=1}^{N}$ from the mixture
-      $p(y_t \mid x_t, y_{1:t-1})$ — for $s = 1, \dots, N$:
-      sample $c^{(s)} \sim \text{Bernoulli}\big( P(c = 1 \mid y_{1:t-1}) \big)$, then
-      $y^{(s)}_t \sim \mathcal{N}\big( \hat{y}^{(c^{(s)})}_{t|t-1},\, S^{(c^{(s)})}_{t|t-1} \big)$.
-   3. Evaluate the Shannon entropy of each sample — for $s = 1, \dots, N$:
-      - $$p(y^{(s)}_t \mid x_t, y_{1:t-1}, c) = \frac{1}{\sqrt{2\pi S^{(c)}_{t|t-1}}} \exp\!\left( -\frac{(y^{(s)}_t - \hat{y}^{(c)}_{t|t-1})^2}{2 S^{(c)}_{t|t-1}} \right), \quad c \in \{0, 1\};$$
-      - $$P(c = 1 \mid x_t, y^{(s)}_t, y_{1:t-1}) = \frac{p(y^{(s)}_t \mid x_t, y_{1:t-1}, c = 1)\, P(c = 1 \mid y_{1:t-1})}{\sum_{c'} p(y^{(s)}_t \mid x_t, y_{1:t-1}, c')\, P(c' \mid y_{1:t-1})};$$
-      - $$H^{(s)} \gets -\sum_{c \in \{0,1\}} P(c \mid x_t, y^{(s)}_t, y_{1:t-1}) \ln P(c \mid x_t, y^{(s)}_t, y_{1:t-1}).$$
-   4. Approximate the expected entropy: $\bar{H}_x \gets \frac{1}{N} \sum_{s=1}^{N} H^{(s)}$.
+
+   $$
+   S^{(c)}_{t|t-1} \gets \beta_c^2 \left( \lambda_c^2 P^{(c)}_{t-1|t-1} + \sigma_{w,c}^2 \right) + \sigma_{e,c}^2.
+   $$
+
+2. For each candidate $x_t \in \mathcal{X}$ (steps 2–6), compute the predictive
+   mean for each group $c \in \{0, 1\}$:
+
+   $$
+   \hat{y}^{(c)}_{t|t-1} \gets (\beta_c \alpha_c + \gamma_c)\, x_t + \beta_c \lambda_c \hat{z}^{(c)}_{t-1|t-1}.
+   $$
+
+3. Draw $N$ samples $\{y^{(s)}_t\}_{s=1}^{N}$ from the mixture
+   $p(y_t \mid x_t, y_{1:t-1})$: for $s = 1, \ldots, N$, sample
+   $c^{(s)} \sim \mathrm{Bernoulli}\left( P(c = 1 \mid y_{1:t-1}) \right)$ and then
+   $y^{(s)}_t \sim \mathcal{N}\left( \hat{y}^{(c^{(s)})}_{t|t-1},\, S^{(c^{(s)})}_{t|t-1} \right)$.
+
+4. Evaluate each sample under both group models, $c \in \{0, 1\}$:
+
+   $$
+   p(y^{(s)}_t \mid x_t, y_{1:t-1}, c) = \frac{1}{\sqrt{2\pi S^{(c)}_{t|t-1}}} \exp\left( -\frac{\left( y^{(s)}_t - \hat{y}^{(c)}_{t|t-1} \right)^2}{2 S^{(c)}_{t|t-1}} \right).
+   $$
+
+5. Turn each into a posterior and take its Shannon entropy:
+
+   $$
+   P(c = 1 \mid x_t, y^{(s)}_t, y_{1:t-1}) = \frac{p(y^{(s)}_t \mid x_t, y_{1:t-1}, c = 1)\, P(c = 1 \mid y_{1:t-1})}{\sum_{c'} p(y^{(s)}_t \mid x_t, y_{1:t-1}, c')\, P(c' \mid y_{1:t-1})},
+   $$
+
+   $$
+   H^{(s)} \gets - \sum_{c \in \{0, 1\}} P(c \mid x_t, y^{(s)}_t, y_{1:t-1}) \ln P(c \mid x_t, y^{(s)}_t, y_{1:t-1}).
+   $$
+
+6. Approximate the expected entropy for this candidate:
+   $\bar{H}_x \gets \frac{1}{N} \sum_{s=1}^{N} H^{(s)}$.
 
 **Output:** the selected input $x_t^{*} = \arg\min_{x_t \in \mathcal{X}} \bar{H}_x$.
 
@@ -209,21 +231,41 @@ candidate $x_t$.
 KF variances $P^{(c)}_{t-1|t-1}$, sample size $N$, candidate inputs $\mathcal{X}$.
 
 1. Compute the predictive variance for each group $c \in \{0, 1\}$:
-   $$S^{(c)}_{t|t-1} \gets \beta_c^2 \big( \lambda_c^2 P^{(c)}_{t-1|t-1} + \sigma_{w,c}^2 \big) + \sigma_{e,c}^2.$$
+
+   $$
+   S^{(c)}_{t|t-1} \gets \beta_c^2 \left( \lambda_c^2 P^{(c)}_{t-1|t-1} + \sigma_{w,c}^2 \right) + \sigma_{e,c}^2.
+   $$
+
 2. Compute the analytic noise entropy:
-   $$H_{\text{noise}} \gets \frac{1}{2} \sum_{c \in \{0,1\}} P(c \mid y_{1:t-1}) \ln\!\big( 2\pi e\, S^{(c)}_{t|t-1} \big).$$
-3. For each candidate $x_t \in \mathcal{X}$:
-   1. Compute the predictive mean for each group $c \in \{0, 1\}$:
-      $$\hat{y}^{(c)}_{t|t-1} \gets (\beta_c \alpha_c + \gamma_c)\, x_t + \beta_c \lambda_c \hat{z}^{(c)}_{t-1|t-1}.$$
-   2. Draw $N$ samples $\{y^{(s)}_t\}_{s=1}^{N}$ from the mixture
-      $p(y_t \mid x_t, y_{1:t-1})$ — for $s = 1, \dots, N$:
-      sample $c^{(s)} \sim \text{Bernoulli}\big( P(c = 1 \mid y_{1:t-1}) \big)$, then
-      $y^{(s)}_t \sim \mathcal{N}\big( \hat{y}^{(c^{(s)})}_{t|t-1},\, S^{(c^{(s)})}_{t|t-1} \big)$.
-   3. Evaluate the full mixture density at each sample, $s = 1, \dots, N$:
-      $$p(y^{(s)}_t \mid x_t, y_{1:t-1}) \gets \sum_{c \in \{0,1\}} P(c \mid y_{1:t-1})\, \mathcal{N}\big( y^{(s)}_t \mid \hat{y}^{(c)}_{t|t-1}, S^{(c)}_{t|t-1} \big).$$
-   4. Approximate the predictive entropy:
-      $\hat{H}_x \gets -\frac{1}{N} \sum_{s=1}^{N} \ln p(y^{(s)}_t \mid x_t, y_{1:t-1})$.
-   5. Estimated mutual information: $I_x \gets \hat{H}_x - H_{\text{noise}}$.
+
+   $$
+   H_{\mathrm{noise}} \gets \frac{1}{2} \sum_{c \in \{0, 1\}} P(c \mid y_{1:t-1}) \ln \left( 2\pi e\, S^{(c)}_{t|t-1} \right).
+   $$
+
+3. For each candidate $x_t \in \mathcal{X}$ (steps 3–6), compute the predictive
+   mean for each group $c \in \{0, 1\}$:
+
+   $$
+   \hat{y}^{(c)}_{t|t-1} \gets (\beta_c \alpha_c + \gamma_c)\, x_t + \beta_c \lambda_c \hat{z}^{(c)}_{t-1|t-1}.
+   $$
+
+4. Draw $N$ samples $\{y^{(s)}_t\}_{s=1}^{N}$ from the mixture
+   $p(y_t \mid x_t, y_{1:t-1})$: for $s = 1, \ldots, N$, sample
+   $c^{(s)} \sim \mathrm{Bernoulli}\left( P(c = 1 \mid y_{1:t-1}) \right)$ and then
+   $y^{(s)}_t \sim \mathcal{N}\left( \hat{y}^{(c^{(s)})}_{t|t-1},\, S^{(c^{(s)})}_{t|t-1} \right)$.
+
+5. Evaluate the full mixture density at each sample and average the log to get
+   the predictive entropy:
+
+   $$
+   p(y^{(s)}_t \mid x_t, y_{1:t-1}) \gets \sum_{c \in \{0, 1\}} P(c \mid y_{1:t-1})\, \mathcal{N}\left( y^{(s)}_t \mid \hat{y}^{(c)}_{t|t-1},\, S^{(c)}_{t|t-1} \right),
+   $$
+
+   $$
+   \hat{H}_x \gets - \frac{1}{N} \sum_{s=1}^{N} \ln p(y^{(s)}_t \mid x_t, y_{1:t-1}).
+   $$
+
+6. Estimated mutual information: $I_x \gets \hat{H}_x - H_{\mathrm{noise}}$.
 
 **Output:** the selected input $x_t^{*} = \arg\max_{x_t \in \mathcal{X}} I_x$.
 
