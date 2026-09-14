@@ -1,7 +1,7 @@
 import numpy as np
 from utils.kalman_filter import kalman_filter
 from utils.monte_carlo_mutual_information import select_next_x_mutual_information
-from utils.monte_carlo_uncertainty_sampling import select_next_x_uncertainty_sampling
+from utils.monte_carlo_entropy_minimization import select_next_x_entropy_minimization
 from utils.infer_patient import _innovations_log_likelihood
 
 
@@ -10,19 +10,22 @@ from utils.infer_patient import _innovations_log_likelihood
 # as it did inside the full comparison. Keyed by an explicit table rather than
 # hash(policy): Python randomises string hashing per process, which would make
 # runs irreproducible.
-_POLICY_STREAM = {"random": 0, "uncertainty sampling": 1, "mutual information": 2}
+_POLICY_STREAM = {"random": 0, "entropy minimization": 1, "mutual information": 2}
 
-# Display names for figures. The keys above are the *identifiers*: they index the
-# Monte Carlo streams, name the CSV columns and key every stored result, so they
-# must never change -- renaming one would silently repartition the RNG streams and
-# break every comparison against a committed CSV. Relabel at the plotting layer
-# instead. "minimum entropy" is also the truer description of what that policy
-# does: it picks the probe minimising the expected posterior Shannon entropy,
-# whereas "uncertainty sampling" conventionally means probing where the model is
-# *most* uncertain.
+# Display names for figures. The keys above are the *identifiers*: they name the
+# CSV columns, key every stored result, and index the Monte Carlo streams via the
+# table above. What the RNG actually consumes is the stream *integer*, not the
+# string, so an identifier can be renamed without changing a single draw -- but
+# only if its integer is preserved, and only if every CSV written under the old
+# name is regenerated, because the cross-check in experiment2_seed_sweep.py looks
+# up columns by name. This policy was called "uncertainty sampling" until
+# 2026-09-11; it was renamed because the old term conventionally means probing
+# where the model is *most* uncertain, which is the opposite of what it does --
+# it picks the probe minimising the expected posterior Shannon entropy. Stream
+# index 1 was kept, so the rename left every number identical.
 POLICY_LABELS = {
     "random": "Random selection",
-    "uncertainty sampling": "Minimum entropy",
+    "entropy minimization": "Minimum entropy",
     "mutual information": "Mutual information",
 }
 
@@ -62,7 +65,7 @@ class _OnlineSSM:
         smoothing (see `rts_smoother`) that would need the future.
     """
 
-    def __init__(self, params, z0=0.0, P0=1.0):
+    def __init__(self, params, z0=0.0, P0=0.0):
         self.p = params
         self.z, self.P = float(z0), float(P0)
         self.log_lik = 0.0
@@ -106,7 +109,7 @@ def steps_to_threshold(accuracy, threshold):
 
 
 def run_patient_with_active_learning(patient, estimated_params, candidates,
-                               policy="uncertainty sampling", T=50, prior_1=0.5, seed=0):
+                               policy="entropy minimization", T=50, prior_1=0.5, seed=0):
     """
     Parameters
     ----------
@@ -117,7 +120,7 @@ def run_patient_with_active_learning(patient, estimated_params, candidates,
     candidates : array-like, shape (n_candidates,)
         Candidate input signals to choose from for x_{t+1}.
     policy : str, optional
-        The policy to use for selecting the next input signal. Options are "random", "uncertainty sampling" or "mutual information"
+        The policy to use for selecting the next input signal. Options are "random", "entropy minimization" or "mutual information"
     T: int, optional
         The number of timesteps to run the simulation for. Defaults to 50.
     prior_1 : float, optional
@@ -189,8 +192,8 @@ def run_patient_with_active_learning(patient, estimated_params, candidates,
 
         if policy == "random":
             next_x = x_rng.uniform(lo, hi)
-        elif policy == "uncertainty sampling":
-            next_x = select_next_x_uncertainty_sampling(candidates, estimated_params, z_means, z_vars, prior_1=posterior_1, samples_size=50, rng=mc_rng)
+        elif policy == "entropy minimization":
+            next_x = select_next_x_entropy_minimization(candidates, estimated_params, z_means, z_vars, prior_1=posterior_1, samples_size=50, rng=mc_rng)
 
         elif policy == "mutual information":
             next_x = select_next_x_mutual_information(candidates, estimated_params, z_means, z_vars, prior_1=posterior_1, samples_size=50, rng=mc_rng)
@@ -226,10 +229,10 @@ def run_patient_with_active_learning(patient, estimated_params, candidates,
 
 def _filter_to_last_state(X, Y, params):
     """Filtered state z_{T|T} and variance P_{T|T} after the existing data.
-    With no data, fall back to the filter's prior init (0, 1) — the same
+    With no data, fall back to the filter's prior init (0, 0) — the same
     prior _innovations_log_likelihood uses — so early timesteps don't crash."""
     if len(Y) == 0:
-        return 0.0, 1.0
+        return 0.0, 0.0
     z_filt, P_filt, _, _ = kalman_filter(Y, X,
                                          params['alpha'], params['lam'],
                                          params['beta'],  params['gamma'],

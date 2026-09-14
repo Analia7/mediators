@@ -1,8 +1,8 @@
 """
 How much of experiment 2's policy comparison is just the data draw?
 
-`experiment2.py` runs one seed. Its headline — uncertainty sampling holds >=0.90
-from step 4, mutual information from step 9, random from step 13 — therefore has
+`experiment2.py` runs one seed. Its headline — entropy minimization holds >=0.90
+from step 4, mutual information from step 10, random from step 13 — therefore has
 no error bar behind it, so there is no way to tell a real ordering of the
 policies from one lucky training set. This refits and reruns the whole thing
 across several seeds and reports the mean and spread of each policy's curve.
@@ -40,7 +40,7 @@ from utils.plots import plot_accuracy_active_learning
 SEEDS = [0, 1, 2, 3, 4]
 N_PATIENTS = 100
 T = 30
-POLICIES = ["random", "uncertainty sampling", "mutual information"]
+POLICIES = ["random", "entropy minimization", "mutual information"]
 CANDIDATES = np.linspace(-4, 4, 33)
 THRESHOLDS = [0.90, 0.95]
 
@@ -185,9 +185,15 @@ sd_curves = {pol: curves[pol].std(axis=0, ddof=1) for pol in POLICIES}
 plot_accuracy_active_learning(
     {POLICY_LABELS[p]: mean_curves[p] for p in POLICIES},
     {POLICY_LABELS[p]: sd_curves[p] for p in POLICIES},
-    save_path=f"results/experiment2_seed_sweep_{TAG}.png",
+    # PDF for the write-up -- vector, so it stays sharp at any reproduction
+    # size; PNG alongside it for quick previewing.
+    save_path=[f"results/experiment2_seed_sweep_{TAG}.pdf",
+               f"results/experiment2_seed_sweep_{TAG}.png"],
+    # Larger type than the single-run figure's default: this one is the summary
+    # panel, so it is the one that gets reproduced small.
+    font_scale=1.7,
 )
-print(f"Wrote results/experiment2_seed_sweep_{TAG}.png")
+print(f"Wrote results/experiment2_seed_sweep_{TAG}.pdf and .png")
 
 # ---- cross-check: sweep seed 0 must reproduce experiment2.py exactly --------
 single = f"results/experiment2_{TAG}.csv"

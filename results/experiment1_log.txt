@@ -43,7 +43,7 @@ Group 1 estimated params:
   sigma_w: 0.2006
   sigma_e: 1.3770
 Our approach:
-Accuracy: 0.7800  (78/100 correct)
+Accuracy: 0.7600  (76/100 correct)
 Logistic Regression (Full Time Series) Accuracy: 0.5500
 Logistic Regression (Distribution Moments) Accuracy: 0.6300
 
@@ -68,7 +68,7 @@ Group 1 estimated params:
   sigma_w: 0.2583
   sigma_e: 0.9469
 Our approach:
-Accuracy: 0.7500  (75/100 correct)
+Accuracy: 0.7400  (74/100 correct)
 Logistic Regression (Full Time Series) Accuracy: 0.5200
 Logistic Regression (Distribution Moments) Accuracy: 0.6400
 
@@ -117,7 +117,7 @@ Group 1 estimated params:
   sigma_w: 0.2988
   sigma_e: 0.4163
 Our approach:
-Accuracy: 0.8300  (83/100 correct)
+Accuracy: 0.8200  (82/100 correct)
 Logistic Regression (Full Time Series) Accuracy: 0.5100
 Logistic Regression (Distribution Moments) Accuracy: 0.5400
 
@@ -141,7 +141,7 @@ Group 1 estimated params:
   sigma_w: 0.2880
   sigma_e: 0.4152
 Our approach:
-Accuracy: 0.8700  (87/100 correct)
+Accuracy: 0.8600  (86/100 correct)
 Logistic Regression (Full Time Series) Accuracy: 0.5400
 Logistic Regression (Distribution Moments) Accuracy: 0.5200
 
@@ -196,11 +196,11 @@ Logistic Regression (Distribution Moments) Accuracy: 0.9800
 ============================================================================
 regime                    ours  LR-full  LR-mom       split   EM conv
 low_noise                 1.00     0.50    0.60     44/56         2/2
-high_noise                0.78     0.55    0.63     54/46         2/2
-mixed_noise_sigma_low     0.75     0.52    0.64     54/46         1/2
+high_noise                0.76     0.55    0.63     54/46         2/2
+mixed_noise_sigma_low     0.74     0.52    0.64     54/46         1/2
 mixed_noise_sigma_high    1.00     0.54    0.98     55/45         1/2
-gamma_high_both_groups    0.83     0.51    0.54     50/50         2/2
-gamma_low_both_groups     0.87     0.54    0.52     52/48         2/2
+gamma_high_both_groups    0.82     0.51    0.54     50/50         2/2
+gamma_low_both_groups     0.86     0.54    0.52     52/48         2/2
 gamma_high_low            1.00     0.55    0.93     38/62         2/2
 gamma_low_high            1.00     0.42    0.98     42/58         2/2
 mean                      0.90     0.52    0.73

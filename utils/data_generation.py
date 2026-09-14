@@ -74,6 +74,37 @@ DEFAULT_PARAMS = {
     0: dict(alpha=0.6, lam=0.8, beta=0.5, gamma=0.2, sigma_w=0.1, sigma_e=0.9),
     1: dict(alpha=0.3, lam=0.4, beta=0.9, gamma=0.5, sigma_w=0.1, sigma_e=0.9),
 }
+
+# A named regime, in the keyword form `generate_synthetic_samples` takes:
+# low state noise, high observation noise, default gamma. Named here so the
+# notebook and experiment2.py can share one definition instead of each retyping
+# the twelve numbers -- the same regime spelled out twice is the kind of thing
+# that drifts silently and invalidates a comparison. experiment1.py keeps its own
+# table of eight regimes, of which this is `mixed_noise_params_sigma_low`.
+MIXED_NOISE_SIGMA_LOW = dict(
+    alpha_0=0.6, lambda_0=0.8, beta_0=0.5, gamma_0=0.2, sigma_w_0=0.1, sigma_e_0=1.0,
+    alpha_1=0.3, lambda_1=0.4, beta_1=0.9, gamma_1=0.5, sigma_w_1=0.1, sigma_e_1=1.0,
+)
+
+
+def as_simulator_params(regime):
+    """
+    Convert a regime from `generate_synthetic_samples` keyword form into the
+    per-group form `PatientSimulator` takes.
+
+    Derived rather than retyped: the batch generator names its parameters
+    `alpha_0` / `lambda_0`, the simulator `alpha` / `lam`, and writing the same
+    regime out in both spellings invites the two halves of an experiment to run
+    on different data-generating processes.
+    """
+    return {
+        group: dict(
+            alpha=regime[f"alpha_{group}"], lam=regime[f"lambda_{group}"],
+            beta=regime[f"beta_{group}"], gamma=regime[f"gamma_{group}"],
+            sigma_w=regime[f"sigma_w_{group}"], sigma_e=regime[f"sigma_e_{group}"],
+        )
+        for group in (0, 1)
+    }
  
 # For phase 2 (active learning): simulating one patient at a time, one time step at a time
 class PatientSimulator:

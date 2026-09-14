@@ -1,5 +1,5 @@
 import numpy as np
-from utils.monte_carlo_uncertainty_sampling import compute_predicted_means_vars, draw_samples_from_mixture_distribution
+from utils.monte_carlo_entropy_minimization import compute_predicted_means_vars, draw_samples_from_mixture_distribution
 
 def compute_analytic_noise_entropy(y_pred_vars, prior_1):
     """

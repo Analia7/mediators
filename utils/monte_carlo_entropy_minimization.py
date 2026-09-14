@@ -142,7 +142,7 @@ def evaluate_Shannon_entropy(y_pred_means, y_pred_vars, group_label_samples, y_s
     return np.mean(shannon_entropy_samples)
 
 
-def select_next_x_uncertainty_sampling(x_candidates, estimated_params, z_pred_means, z_pred_vars, prior_1=0.5, samples_size=50, rng=None):
+def select_next_x_entropy_minimization(x_candidates, estimated_params, z_pred_means, z_pred_vars, prior_1=0.5, samples_size=50, rng=None):
     """
     Choose the next input signal x_{t+1} from a set of candidates based on the current patient data and estimated parameters.
 
@@ -159,14 +159,14 @@ def select_next_x_uncertainty_sampling(x_candidates, estimated_params, z_pred_me
     prior_1 : float
         Prior probability of belonging to group 1, P(c_n = 1).
     samples_size : int
-        Number of samples to draw from the mixture distribution for uncertainty estimation.
+        Number of samples to draw from the mixture distribution for the entropy estimate.
     rng : np.random.Generator or None
         Source of randomness for the Monte Carlo draws.
 
     Returns
     -------
     best_candidate : float
-        The candidate input signal that minimizes uncertainty.
+        The candidate input signal that minimizes the expected posterior entropy.
     """
     best_candidate = None
     min_entropy = np.inf

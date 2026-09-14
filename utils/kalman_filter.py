@@ -1,7 +1,7 @@
 import numpy as np
  
  
-def kalman_filter(Y, X, alpha, lam, beta, gamma, sigma_w, sigma_e, z0=0.0, P0=1.0):
+def kalman_filter(Y, X, alpha, lam, beta, gamma, sigma_w, sigma_e, z0=0.0, P0=0.0):
     """
     Kalman filter for the SSM:
       State:       z_t = alpha * x_t + lam * z_{t-1} + w_t,   w ~ N(0, sigma_w^2)
@@ -28,7 +28,14 @@ def kalman_filter(Y, X, alpha, lam, beta, gamma, sigma_w, sigma_e, z0=0.0, P0=1.
     z0 : float
         Initial state mean. Defaults to 0.0.
     P0 : float
-        Initial state variance. Defaults to 1.0.
+        Initial state variance. Defaults to 0.0: both data generators start every
+        trajectory from z_{-1} = 0 exactly, so the initial state carries no
+        uncertainty. This must match what em_algorithm assumes (_Z0, _P0) -- a
+        filter that scores a different initial prior than EM maximised reports a
+        different log-likelihood for the same parameters, and since
+        classification compares two such log-likelihoods, the mismatch does not
+        cancel. The old default of 1.0 tilted the log-odds toward whichever
+        model had the larger startup transient.
  
     Returns
     -------

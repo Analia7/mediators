@@ -1,3 +1,5 @@
+import os
+
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.lines import Line2D
@@ -575,7 +577,8 @@ def plot_mean_std(
     plt.close(fig)
 
 def plot_accuracy_active_learning(curves, sems=None, save_path=None,
-                                  title=None, subtitle=None, chance=0.5):
+                                  title=None, subtitle=None, chance=0.5,
+                                  font_scale=1.0):
     """
     curves   : dict like {"Random": acc_random, "Minimum entropy": acc_me}
                Keys are used verbatim as legend labels, so pass display names
@@ -584,14 +587,26 @@ def plot_accuracy_active_learning(curves, sems=None, save_path=None,
                assignment, so a policy keeps its colour even if another is
                dropped from the comparison.
     sems     : optional dict of same shape, for +/- 1 SEM shaded bands
-    save_path: write a PNG here instead of showing the figure
+    save_path: write the figure here instead of showing it. A sequence of paths
+               writes the same figure to each, so a vector PDF for the write-up
+               and a PNG for previewing come out of one draw rather than two --
+               two draws is two chances for them to disagree. The format follows
+               each path's extension.
     title    : headline; defaults to a plain description
     subtitle : one line of run configuration (n patients, noise regime, ...);
                None by default, on the assumption a caption carries it
     chance   : y value of the reference line, or None to omit it
+    font_scale : multiplier on every type size in the figure, for a figure that
+               will be reproduced small. Scales the *whole* hierarchy at once so
+               the relative sizes -- title over labels over ticks -- are the ones
+               that were set here, rather than drifting as one size is nudged.
+               The figure itself does not grow, so a large scale eats plot area.
     """
     T = len(next(iter(curves.values())))     # length of any curve
     steps = np.arange(1, T + 1)
+
+    def pt(size):
+        return size * font_scale
 
     fig, ax = plt.subplots(figsize=(9, 5.5))
 
@@ -606,7 +621,7 @@ def plot_accuracy_active_learning(curves, sems=None, save_path=None,
         ax.axhline(chance, ls="--", lw=1, color=_INK_MUTED, zorder=1)
         ax.annotate(f"Chance ({chance:g})", xy=(1, chance), xytext=(9, 6),
                     textcoords="offset points", ha="left", va="bottom",
-                    fontsize=9, color=_INK_MUTED)
+                    fontsize=pt(9), color=_INK_MUTED)
 
     for i, (label, acc) in enumerate(curves.items()):
         colour = _SERIES_COLORS[i % len(_SERIES_COLORS)]
@@ -627,10 +642,10 @@ def plot_accuracy_active_learning(curves, sems=None, save_path=None,
     xticks = [1] + [t for t in range(5, T + 1, 5)]
     ax.set_xticks(xticks)
     ax.set_yticks(np.arange(0.4, 1.01, 0.1))
-    ax.tick_params(colors=_INK_SECONDARY, labelsize=10, length=0)
+    ax.tick_params(colors=_INK_SECONDARY, labelsize=pt(10), length=0)
 
-    ax.set_xlabel("Time step", fontsize=11, color=_INK_SECONDARY, labelpad=8)
-    ax.set_ylabel("Fraction correct", fontsize=11, color=_INK_SECONDARY, labelpad=8)
+    ax.set_xlabel("Time step", fontsize=pt(11), color=_INK_SECONDARY, labelpad=8)
+    ax.set_ylabel("Fraction correct", fontsize=pt(11), color=_INK_SECONDARY, labelpad=8)
 
     for side in ("top", "right"):
         ax.spines[side].set_visible(False)
@@ -643,20 +658,20 @@ def plot_accuracy_active_learning(curves, sems=None, save_path=None,
     # one still reserves the space the subtitle sits in -- an annotation placed
     # in offset points does not reliably claim room from tight_layout.
     if title:
-        ax.set_title(title, fontsize=12, color=_INK_PRIMARY, loc="left",
+        ax.set_title(title, fontsize=pt(12), color=_INK_PRIMARY, loc="left",
                      pad=30 if subtitle else 12)
     elif subtitle:
         ax.set_title("", pad=20)
     if subtitle:
         ax.annotate(subtitle, xy=(0, 1), xytext=(0, 7), xycoords="axes fraction",
                     textcoords="offset points", ha="left", va="bottom",
-                    fontsize=10, color=_INK_SECONDARY)
+                    fontsize=pt(10), color=_INK_SECONDARY)
 
     # Legend always present for >=2 series; its text wears an ink token, with the
     # short colour key beside it carrying identity.
     # Centre-right: with the curves converging at the top and the chance rule at
     # the bottom, this band is the one part of the plot that is reliably empty.
-    leg = ax.legend(loc="center right", fontsize=10, handlelength=1.6,
+    leg = ax.legend(loc="center right", fontsize=pt(10), handlelength=1.6,
                     borderpad=0.9, labelspacing=0.6,
                     frameon=True, facecolor="white", edgecolor="none", framealpha=0.95)
     for text in leg.get_texts():
@@ -665,7 +680,13 @@ def plot_accuracy_active_learning(curves, sems=None, save_path=None,
     fig.tight_layout()
 
     if save_path:
-        fig.savefig(save_path, dpi=200, facecolor="white")
+        # A bare str is itself a sequence, so test for the string case rather
+        # than for iterability -- otherwise a single path saves one file per
+        # character.
+        paths = [save_path] if isinstance(save_path, (str, os.PathLike)) else list(save_path)
+        for path in paths:
+            # dpi is inert for a vector format; it is the raster paths that need it.
+            fig.savefig(path, dpi=200, facecolor="white")
     else:
         plt.show()
 

@@ -1,4 +1,5 @@
-from utils.data_generation import generate_synthetic_samples, PatientSimulator
+from utils.data_generation import (generate_synthetic_samples, PatientSimulator,
+                                  MIXED_NOISE_SIGMA_LOW, as_simulator_params)
 from utils.plots import plot_scatter_by_group, plot_trajectories, plot_mean_std, plot_accuracy_active_learning
 from utils.em_algorithm import em_ssm
 from utils.infer_patient import infer_patient
@@ -20,14 +21,9 @@ np.random.seed(SEED)
 
 TAG = "mixed_noise_sigmaw_low"
 
-# parameters for synthetic data generation experiments
-# mixed (sigma_w is low, sigma_e is high)
-params = {
-    'alpha_0': 0.6, 'lambda_0': 0.8, 'beta_0': 0.5, 'gamma_0': 0.2,
-    'sigma_w_0': 0.1, 'sigma_e_0': 1.0,
-    'alpha_1': 0.3, 'lambda_1': 0.4, 'beta_1': 0.9, 'gamma_1': 0.5,
-    'sigma_w_1': 0.1, 'sigma_e_1': 1.0,
-}
+# mixed noise: sigma_w low, sigma_e high. Shared with the notebook, which runs
+# the same regime -- see utils/data_generation.MIXED_NOISE_SIGMA_LOW.
+params = MIXED_NOISE_SIGMA_LOW
   
 print(f"\nRunning experiment with parameter set: {params}")
 j_train, X_train, Z_train, Y_train = generate_synthetic_samples(n_patients=100, T=50, seed=(SEED, 0), **params)
@@ -52,14 +48,13 @@ for group in [0, 1]:
     for k, v in est_params.items():
         print(f"  {k}: {v:.4f}")
 
-# rewrite params dictionary to match the expected format for PatientSimulator
-params = {
-    0: dict(alpha=0.6, lam=0.8, beta=0.5, gamma=0.2, sigma_w=0.1, sigma_e=1.0),
-    1: dict(alpha=0.3, lam=0.4, beta=0.9, gamma=0.5, sigma_w=0.1, sigma_e=1.0),
-}
+# The same regime in the form PatientSimulator takes, derived rather than
+# retyped: two spellings of one regime is how the generator and the simulator
+# end up silently disagreeing.
+params = as_simulator_params(params)
 n_patients = 100
 T = 30
-policies = ["random", "uncertainty sampling", "mutual information"]
+policies = ["random", "entropy minimization", "mutual information"]
 # to account for time step 0
 correct = {pol: np.zeros((n_patients, T), dtype=bool) for pol in policies}
 candidates = np.linspace(-4, 4, 33)

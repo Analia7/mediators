@@ -1,9 +1,9 @@
 regime,seed,n_train,n_test,n_train_group0,n_train_group1,accuracy_ssm,accuracy_lr_full_timeseries,accuracy_lr_moments
 low_noise,0,100,100,44,56,1.000000,0.500000,0.600000
-high_noise,0,100,100,54,46,0.780000,0.550000,0.630000
-mixed_noise_sigma_low,0,100,100,54,46,0.750000,0.520000,0.640000
+high_noise,0,100,100,54,46,0.760000,0.550000,0.630000
+mixed_noise_sigma_low,0,100,100,54,46,0.740000,0.520000,0.640000
 mixed_noise_sigma_high,0,100,100,55,45,1.000000,0.540000,0.980000
-gamma_high_both_groups,0,100,100,50,50,0.830000,0.510000,0.540000
-gamma_low_both_groups,0,100,100,52,48,0.870000,0.540000,0.520000
+gamma_high_both_groups,0,100,100,50,50,0.820000,0.510000,0.540000
+gamma_low_both_groups,0,100,100,52,48,0.860000,0.540000,0.520000
 gamma_high_low,0,100,100,38,62,1.000000,0.550000,0.930000
 gamma_low_high,0,100,100,42,58,1.000000,0.420000,0.980000

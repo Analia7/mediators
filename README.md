@@ -23,7 +23,7 @@ can *actively choosing* `x_t` identify it in fewer time steps than random dosing
 | `utils/em_algorithm.py` | `em_ssm`: per-group parameter estimation |
 | `utils/infer_patient.py` | Group posterior from the marginal likelihood under each model |
 | `utils/active_learning.py` | The active-learning loop and the online per-group filter |
-| `utils/monte_carlo_uncertainty_sampling.py` | Uncertainty-sampling policy (minimise posterior entropy) |
+| `utils/monte_carlo_entropy_minimization.py` | Entropy-minimization policy (minimise expected posterior entropy) |
 | `utils/monte_carlo_mutual_information.py` | Mutual-information policy (BALD) |
 | `utils/baseline.py` | Logistic-regression baselines |
 | `utils/plots.py` | All figures |
@@ -171,11 +171,11 @@ is recorded in the CSVs and logs under `results/` either way.
 
 *Policy display names are separate from policy identifiers.* Figures label the
 policies `Random selection` / `Minimum entropy` / `Mutual information` via
-`POLICY_LABELS` in `utils/active_learning.py`, while the identifiers used as
-dict keys, CSV columns and — critically — Monte Carlo stream indices stay
-lowercase and unchanged. `Minimum entropy` describes what the policy does (it
-minimises the expected posterior Shannon entropy); "uncertainty sampling"
-conventionally means the opposite, probing where the model is least certain.
+`POLICY_LABELS` in `utils/active_learning.py`, while the identifiers used as dict
+keys, CSV columns and Monte Carlo stream indices stay lowercase (`random`,
+`entropy minimization`, `mutual information`). Both halves now describe the same
+thing — the policy minimises the expected posterior Shannon entropy — since the
+identifier was renamed from `uncertainty sampling` on 2026-09-11 (see below).
 
 *`plot_trajectories` is now a predicted-vs-actual figure.* It draws **one column
 per group** instead of overlaying the groups on shared axes — the columns hold
@@ -211,22 +211,124 @@ group — the duplicated-patient case — pass `true_group=`.
 
 `active_discovery_of_latent_dynamic_mediators.ipynb` was re-executed top to
 bottom on the fixed code (kernel `hyperparameters`, `SEED = 0`), replacing
-outputs that predated every fix above. What changed:
+outputs that predated every fix above.
 
-| | Stale output | Refreshed |
+**It also now runs a named regime.** Every phase draws from
+`MIXED_NOISE_SIGMA_LOW` (`utils/data_generation.py`) — experiment 1's
+`mixed_noise_sigma_low`, and the regime `experiment2.py` runs. Previously the
+notebook passed no parameters at all and so silently used the generator's
+defaults, which differ in `σ_e` (0.9 against 1.0): a slightly *easier* problem
+than any regime the scripts report, and therefore not comparable with either of
+them. Phase 3 also had to be given `params=` explicitly, because
+`PatientSimulator` falls back to `DEFAULT_PARAMS` (`σ_e = 0.9`) — so the
+active-learning section had been simulating a different process from the
+training and test data it was built on.
+
+Because the notebook's training draw is `seed=(0, 0)` on the same regime,
+**its EM fits are now identical to `experiment2.py`'s** — α̂ = 0.492, λ̂ = 0.715,
+β̂ = 0.739, γ̂ = 0.131 for group 0, matching `results/experiment2_log.txt`
+digit for digit. That equality is the cheapest available check that the notebook
+and the script agree about phase 1.
+
+| | Stale output (old code, old regime) | Now |
 |---|---|---|
-| Group 1 `λ̂` | 0.14 | 0.29 (true 0.40; group 0: 0.73 against 0.80) |
-| Our approach | 0.80 | **0.78** |
+| Group 1 `λ̂` | 0.14 | 0.29 (true 0.40; group 0: 0.72 against 0.80) |
+| Our approach | 0.80 | **0.74** |
 | Baseline, full series | 0.55 | 0.42 |
-| Baseline, moments | 0.68 | 0.48 |
-| Active learning | flat plateaus, `divide by zero` warnings | all three policies reach 1.0; both active ones lead `random` from ~step 3 until it catches up near step 20 |
+| Baseline, moments | 0.68 | 0.47 |
+| Active learning | flat plateaus, `divide by zero` warnings | both active policies lead `Random selection` throughout: `Minimum entropy` reaches 1.00 at step 11 and holds it, `Mutual information` at step 14, while `Random selection` first touches 1.00 only at step 21 and then falls back below it |
 
 The accuracy gap over the baseline therefore *widens* — the baseline was the main
 beneficiary of the old numbers, and it is the weak component (see limitations).
-Two things in the refreshed output are expected rather than wrong: EM warns
-non-convergence for training group 1 (`max_iter=1000`, last change ~2e-4) because
+0.74 sits just above this regime's five-seed mean of 0.730 ± 0.036
+(`results/experiment1_seed_sweep.csv`), so it is an ordinary draw for the regime
+rather than a notably good or bad one; note that experiment 1 reporting 0.74 for
+the same regime is a coincidence of two different data draws, not a match to
+check against (it uses `seed=(0, 2, ·)`, the notebook `seed=(0, ·)`).
+
+Two things in the output are expected rather than wrong: EM warns
+non-convergence for training group 1 (`max_iter=1000`, last change ~3e-4) because
 it is crawling the scale ridge, and the α̂/β̂/σ̂_w it reports for either group are
 individually unidentified — read `λ`, `(βα+γ)` and the noise moments instead.
+
+## Fixes applied 2026-09-11
+
+**The initial state prior is now consistent across the codebase (`P0 = 0`).**
+EM already assumed `z_{-1} = 0` exactly with no uncertainty (`_Z0`, `_P0` in
+`utils/em_algorithm.py`) — which is what both generators do — but every *consumer*
+of that fit defaulted to `P0 = 1.0`: `kalman_filter`, `_innovations_log_likelihood`
+and `_OnlineSSM`. All three now default to `0.0`.
+
+This had been filed below as a tidiness issue, on the grounds that a startup
+transient washes out. It does not wash out of a *ratio*. `infer_patient`
+classifies by differencing two marginal log-likelihoods, and the mismatched prior
+costs each model a different amount — on experiment 2's fits, 1.29 nats for
+group 0 against 0.01 nats for group 1. The residue was a systematic **+0.056 nat
+tilt of the log-odds toward group 1**, which moved 5 of 100 test predictions.
+
+Verified after the change, on experiment 2's training draw:
+
+* `em_ssm`'s E-step log-likelihood now equals `_innovations_log_likelihood`
+  summed over patients, for both groups (agreement to 1e-11, i.e. float summation
+  order only). EM maximises exactly the quantity inference scores.
+* `_OnlineSSM` still matches the batch filter exactly — same accumulated
+  log-likelihood, same filtered `z`, `P` to 12 dp.
+* `_e_step`'s sufficient statistics and log-likelihood were checked against the
+  exact joint Gaussian posterior of `z_{0:T-1} | y` built in closed form
+  (`z = M⁻¹(αx + w)`, `M = I − λL`): `E[z_t]`, `E[z_t²]` and the lag-one
+  `E[z_t z_{t-1}]` all agree to ~2e-16, and `log p(y)` exactly.
+
+**What moved.** Every artifact in `results/` and the notebook were regenerated.
+EM is untouched by this change, so `experiment1_parameters.csv` is byte-identical
+and the notebook's fits still match `experiment2.py`'s digit for digit.
+
+| | Before | After |
+|---|---|---|
+| Notebook, our approach | 0.75 | 0.74 |
+| Experiment 1, per-regime accuracy | — | 4 of 8 regimes moved, all by 0.01–0.02 |
+| Experiment 1, five-seed means | — | −0.008 to +0.016, every one inside its own sd |
+| Experiment 2, paired gap over random | ME +0.049 ± 0.002, MI +0.023 ± 0.004 | ME +0.050 ± 0.002, MI +0.026 ± 0.009 |
+
+**The correctness argument is the reason for this change, not an accuracy gain.**
+On seed 0 the four affected experiment-1 regimes all moved *down*, which looks
+like a bias being removed — but across five seeds the direction is not systematic
+(2–3 of 5 seeds move up in each regime) and the means shift by less than their own
+spread. What did change consistently is the seed-to-seed sd, which **rose** in all
+four affected regimes (median across regimes 0.008 → 0.013, `mixed_noise_sigma_low`
+0.022 → 0.036). Sharper early likelihoods make borderline patients flip more
+readily. Experiment 2's policy ordering and every conclusion drawn from it are
+unchanged, and the sweep's seed-0 cross-check against `experiment2.py` still
+passes.
+
+## Renamed 2026-09-11: `uncertainty sampling` → `entropy minimization`
+
+The policy is named for what it does. It picks the probe that **minimises** the
+expected posterior Shannon entropy; "uncertainty sampling" conventionally means
+the opposite — probing where the model is *least* certain — so the old name
+described the wrong algorithm.
+
+| Was | Now |
+|---|---|
+| `utils/monte_carlo_uncertainty_sampling.py` | `utils/monte_carlo_entropy_minimization.py` |
+| `select_next_x_uncertainty_sampling` | `select_next_x_entropy_minimization` |
+| identifier `"uncertainty sampling"` | identifier `"entropy minimization"` |
+
+The figure label is unchanged: `POLICY_LABELS` still maps this policy to
+`Minimum entropy`, which already said the right thing, so no committed figure's
+legend moved.
+
+**The rename changed no numbers.** The identifier indexes a Monte Carlo stream
+through `_POLICY_STREAM`, and what `np.random.default_rng` actually consumes is
+the stream *integer*, not the string — so preserving index `1` preserves every
+draw. Verified: `results/experiment2_mixed_noise_sigmaw_low.csv` is bit-identical
+across the rename (max |delta| = 0.0 over the whole numeric body); only the column
+headers moved. The seed sweep's `policy` field and its seed-0 cross-check follow
+the same rule, and both CSVs were regenerated so the cross-check still resolves
+its columns by name.
+
+`results/archive_pre_fix/` and any file written before 2026-09-11 still carry the
+old identifier. Because stream index 1 was preserved, those numbers remain
+directly comparable with current ones.
 
 ## Known limitations
 
@@ -242,10 +344,10 @@ individually unidentified — read `λ`, `(βα+γ)` and the noise moments inste
   together at lag 0; only the `−γλ x_{t-1}` term separates them, and that vanishes
   as `λ → 0`. Fix by pinning the scale (`β ≡ 1` or `σ_w ≡ 1`) and reporting the
   invariants, or by adding an observation channel that breaks the tie.
-- **Non-convergence on the flat direction is expected, not alarming.** 5 of the
-  16 group fits in `experiment1.py` still warn at `max_iter=1000` (all in the
-  mixed-noise / `gamma_low_high` regimes, each with a last log-likelihood change
-  of ~1e-4) because EM crawls along the scale ridge. The
+- **Non-convergence on the flat direction is expected, not alarming.** 2 of the
+  16 group fits in `experiment1.py` warn at `max_iter=1000` — group 1 of
+  `mixed_noise_sigma_low` and of `mixed_noise_sigma_high`, each with a last
+  log-likelihood change of ~1e-4 — because EM crawls along the scale ridge. The
   *identified* quantities are already stable — λ, b0, b1 and the noise moments
   agree to <0.005 between iteration 1000 and 2000 — while the raw parameters keep
   drifting. Read the invariants, not the raw values.
@@ -255,12 +357,6 @@ individually unidentified — read `λ`, `(βα+γ)` and the noise moments inste
   `C`, and give the moments variant a lag-1 *cross*-covariance
   `cov(x_{t-1}, y_t)`, which is precisely the mediation signal. The headline
   comparison is vulnerable until then.
-- **EM and inference disagree about the initial state.** EM now uses
-  `z_{-1} = 0` exactly (correct — it is what the generators do), but
-  `kalman_filter`, `infer_patient` and `_innovations_log_likelihood` still default
-  to `P0 = 1.0`, which overstates z's stationary variance (≈0.28 for group 0).
-  It is a startup transient that washes out, but aligning them would be tidier —
-  and would require rerunning experiment 2.
 - **The Monte Carlo policies still dominate the runtime**, though far less than
   they did. `draw_samples_from_mixture_distribution` was calling
   `scipy.stats.norm.rvs` once per sample in a list comprehension — ~30 µs of

@@ -2,7 +2,7 @@ import numpy as np
 from utils.kalman_filter import kalman_filter
  
  
-def _innovations_log_likelihood(Y, X, params):
+def _innovations_log_likelihood(Y, X, params, P0=0.0):
     """
     Compute the marginal log-likelihood log p(y_{1:T}) using the Kalman filter
     innovations sequence.
@@ -13,6 +13,12 @@ def _innovations_log_likelihood(Y, X, params):
  
     The marginal log-likelihood is:
         log p(y_{1:T}) = sum_t [ -0.5 * log(2 * pi * S_t) - 0.5 * v_t^2 / S_t ]
+
+    P0 is the initial state variance and defaults to 0.0, matching the generators
+    (z_{-1} = 0 exactly) and em_algorithm's _P0. It must agree with EM: this
+    function scores the same quantity EM maximises, and `infer_patient` classifies
+    by *differencing* two of these, so a mismatched prior biases the log-odds
+    toward one model rather than cancelling.
     """
     alpha   = params["alpha"]
     lam     = params["lam"]
@@ -27,7 +33,7 @@ def _innovations_log_likelihood(Y, X, params):
  
     log_lik = 0.0
     z_prev  = 0.0
-    P_prev  = 1.0
+    P_prev  = P0
  
     for t in range(T):
         # Predict

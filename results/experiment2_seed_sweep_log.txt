@@ -1,34 +1,34 @@
 Experiment 2 seed sweep · regime mixed_noise_sigmaw_low · 5 seeds · 100 patients · T=30
 true params: {0: {'alpha': 0.6, 'lam': 0.8, 'beta': 0.5, 'gamma': 0.2, 'sigma_w': 0.1, 'sigma_e': 1.0}, 1: {'alpha': 0.3, 'lam': 0.4, 'beta': 0.9, 'gamma': 0.5, 'sigma_w': 0.1, 'sigma_e': 1.0}}
 
-  seed 0  (EM converged 1/2)  random: mean 0.894  uncertainty sampling: mean 0.942  mutual information: mean 0.916  
-  seed 1  (EM converged 1/2)  random: mean 0.880  uncertainty sampling: mean 0.930  mutual information: mean 0.897  
-  seed 2  (EM converged 0/2)  random: mean 0.873  uncertainty sampling: mean 0.920  mutual information: mean 0.897  
-  seed 3  (EM converged 0/2)  random: mean 0.900  uncertainty sampling: mean 0.950  mutual information: mean 0.923  
-  seed 4  (EM converged 1/2)  random: mean 0.893  uncertainty sampling: mean 0.944  mutual information: mean 0.922  
+  seed 0  (EM converged 1/2)  random: mean 0.893  entropy minimization: mean 0.944  mutual information: mean 0.921  
+  seed 1  (EM converged 1/2)  random: mean 0.881  entropy minimization: mean 0.934  mutual information: mean 0.894  
+  seed 2  (EM converged 0/2)  random: mean 0.879  entropy minimization: mean 0.928  mutual information: mean 0.911  
+  seed 3  (EM converged 0/2)  random: mean 0.899  entropy minimization: mean 0.949  mutual information: mean 0.921  
+  seed 4  (EM converged 1/2)  random: mean 0.894  entropy minimization: mean 0.941  mutual information: mean 0.929  
 
 Steps to a sustained accuracy >= 0.9 (1-indexed; step 1 is the prior, so the floor is 2):
   policy                   seed 0 seed 1 seed 2 seed 3 seed 4   mean     sd  never
-  random                       13     12     13      8      9   11.0  2.35      0
-  uncertainty sampling          4      7      8      5      6    6.0  1.58      0
-  mutual information            9      8      9      9      7    8.4  0.89      0
+  random                       13     12     13      8     10   11.2  2.17      0
+  entropy minimization          4      7      7      5      7    6.0  1.41      0
+  mutual information           10      8      8     10      7    8.6  1.34      0
 
 Steps to a sustained accuracy >= 0.95 (1-indexed; step 1 is the prior, so the floor is 2):
   policy                   seed 0 seed 1 seed 2 seed 3 seed 4   mean     sd  never
-  random                       15     19     20     20     19   18.6  2.07      0
-  uncertainty sampling         10      9     14      8      7    9.6  2.70      0
-  mutual information           11     19     19     12     11   14.4  4.22      0
+  random                       15     18     17     20     13   16.6  2.70      0
+  entropy minimization         10      9      9      6      7    8.2  1.64      0
+  mutual information           14     20      9     12     14   13.8  4.02      0
 
 Mean accuracy over all 30 steps, per seed:
   policy                   seed 0 seed 1 seed 2 seed 3 seed 4   mean     sd
-  random                    0.894  0.880  0.873  0.900  0.893  0.888  0.011
-  uncertainty sampling      0.942  0.930  0.920  0.950  0.944  0.937  0.012
-  mutual information        0.916  0.897  0.897  0.923  0.922  0.911  0.013
+  random                    0.893  0.881  0.879  0.899  0.894  0.889  0.009
+  entropy minimization      0.944  0.934  0.928  0.949  0.941  0.939  0.008
+  mutual information        0.921  0.894  0.911  0.921  0.929  0.915  0.013
 
 Paired gap over random, per seed (same patients, same noise, same probes at t=0):
   policy                   seed 0 seed 1 seed 2 seed 3 seed 4   mean     sd   wins
-  uncertainty sampling     +0.049 +0.050 +0.046 +0.050 +0.052 +0.049  0.002    5/5
-  mutual information       +0.022 +0.017 +0.024 +0.023 +0.029 +0.023  0.004    5/5
+  entropy minimization     +0.051 +0.052 +0.049 +0.050 +0.046 +0.050  0.002    5/5
+  mutual information       +0.028 +0.012 +0.032 +0.022 +0.034 +0.026  0.009    5/5
   (a gap smaller than its own sd is not evidence of a better policy)
 
 Wrote results/experiment2_seed_sweep.csv  (450 rows)

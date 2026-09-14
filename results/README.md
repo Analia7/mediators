@@ -1,9 +1,15 @@
 # Results
 
-Everything in this directory is current — produced after the 2026-09-09 fixes, with
-explicit seeds, so every file can be regenerated bit-identically. Anything from
-before those fixes is in `archive_pre_fix/` and is **not usable**; see the README
-there for why.
+Everything in this directory is current — regenerated 2026-09-11, after both the
+2026-09-09 correctness fixes and the 2026-09-11 `P0 = 0` alignment (repo README >
+Fixes applied 2026-09-11), with explicit seeds, so every file can be regenerated
+bit-identically. Anything from before those fixes is in `archive_pre_fix/` and is
+**not usable**; see the README there for why.
+
+Because `P0` changed in `kalman_filter`, `infer_patient` and `_OnlineSSM`, every
+file here moved except `experiment1_parameters.csv`, which is byte-identical: EM
+already used `P0 = 0`, so the fits themselves never changed — only what the
+classifier and the active-learning filters did with them.
 
 ## Experiment 1 — classification accuracy and parameter recovery across 8 regimes
 
@@ -50,12 +56,15 @@ different regime writes alongside these rather than overwriting them. Only the
 **The figures and the CSVs name the policies differently, on purpose.** The
 figures show the display labels from `POLICY_LABELS` (`Random selection`,
 `Minimum entropy`, `Mutual information`); the CSV columns and the sweep's
-`policy` field keep the internal identifiers (`random`, `uncertainty sampling`,
-`mutual information`). Those identifiers also index the Monte Carlo streams, so
-renaming one would repartition the RNG and change every downstream number —
-hence the split. `Minimum entropy` is the same policy as `uncertainty sampling`,
-and the truer description of it: it probes where the expected posterior Shannon
-entropy is *lowest*.
+`policy` field keep the internal identifiers (`random`, `entropy minimization`,
+`mutual information`). Keeping the two separate means a figure can be relabelled
+without touching the CSV columns that the sweep's cross-check looks up by name.
+
+Both identifiers and labels now describe the same thing: the policy probes where
+the expected posterior Shannon entropy is *lowest*. Files written before
+2026-09-11 use the old identifier `uncertainty sampling` for it — the rename
+preserved Monte Carlo stream index 1, so those older numbers are still directly
+comparable.
 
 ## Experiment 2 — seed sensitivity
 
