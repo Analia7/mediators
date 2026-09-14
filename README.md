@@ -23,7 +23,7 @@ can *actively choosing* `x_t` identify it in fewer time steps than random dosing
 | `utils/em_algorithm.py` | `em_ssm`: per-group parameter estimation |
 | `utils/infer_patient.py` | Group posterior from the marginal likelihood under each model |
 | `utils/active_learning.py` | The active-learning loop and the online per-group filter |
-| `utils/monte_carlo_entropy_minimization.py` | Entropy-minimization policy (minimise expected posterior entropy) |
+| `utils/monte_carlo_entropy_minimization.py` | Entropy-minimization policy (minimize expected posterior entropy) |
 | `utils/monte_carlo_mutual_information.py` | Mutual-information policy (BALD) |
 | `utils/baseline.py` | Logistic-regression baselines |
 | `utils/plots.py` | All figures |
@@ -59,7 +59,7 @@ $\mathbb{E}[z_1 z_0] = 0$. The same pass returns the marginal log-likelihood
 $\log p(y_{1:T})$ from the innovations, which is what the convergence check
 monitors.
 
-**M-step.** Maximise the expected complete-data log-likelihood $Q(\theta_j \mid \theta_j^{\text{old}})$
+**M-step.** Maximize the expected complete-data log-likelihood $Q(\theta_j \mid \theta_j^{\text{old}})$
 to estimate the parameters. To ease notation, the subscript $j$ is dropped below.
 **All sums run over every transition $t = 1, \ldots, T$ and all $N$ patients in
 the group**, with the $t = 1$ term contributing through $z_0 = 0$.
@@ -138,7 +138,7 @@ For each patient $n$:
 1. Run the Kalman filter to infer $z_{1:T}$ under **both** models, $c_n = 0$ and
    $c_n = 1$, accumulating the marginal likelihood $p^j(y_{1:T})$ of each.
 2. Infer $c_n$ from those marginal likelihoods. Under a uniform prior the
-   normalised marginal likelihood *is* the class probability.
+   normalized marginal likelihood *is* the class probability.
 
 
 ### Phase 3 — active sampling
@@ -162,7 +162,7 @@ $$
 The marginal distribution of $y_t$ is a mixture of Gaussians, so this expectation
 has no closed form and is approximated by Monte Carlo.
 
-**Algorithm 1 — active learning via entropy minimisation for SSMs**
+**Algorithm 1 — active learning via entropy minimization for SSMs**
 (`utils/monte_carlo_entropy_minimization.py`)
 
 **Input:** prior $P(c = 1 \mid y_{1:t-1})$, KF state estimates $\hat{z}^{(c)}_{t-1|t-1}$,
@@ -209,7 +209,7 @@ KF variances $P^{(c)}_{t-1|t-1}$, sample size $N$, candidate inputs $\mathcal{X}
 
 #### Mutual information
 
-An alternative is to maximise the mutual information $I(c; y_t \mid x_t)$ between
+An alternative is to maximize the mutual information $I(c; y_t \mid x_t)$ between
 the latent treatment group and the future outcome, i.e. the action with the
 largest expected reduction in the Shannon entropy of $c$:
 
@@ -305,7 +305,7 @@ another:
 | Component | Seed | Notes |
 |---|---|---|
 | Training / test data | `generate_synthetic_samples(seed=...)` | `(SEED, regime, 0)` train, `(SEED, regime, 1)` test — distinct per regime, and train ≠ test |
-| Patient `i`'s noise | `PatientSimulator(seed=i)` | Same realisation for all policies — a *paired* comparison |
+| Patient `i`'s noise | `PatientSimulator(seed=i)` | Same realization for all policies — a *paired* comparison |
 | Patient `i`'s probes | `run_patient_with_active_learning(seed=i)` | The `random` policy's `x` sequence |
 | Monte Carlo draws | derived from the same `seed` | One stream **per (patient, policy)** |
 
