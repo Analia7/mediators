@@ -37,6 +37,273 @@ can *actively choosing* `x_t` identify it in fewer time steps than random dosing
 likelihoods, take the MAP label. (3) *Active learning* — pick `x_{t+1}` to
 identify the group as fast as possible.
 
+## Method
+
+### Phase 1 — training
+
+The group labels $c_n$ are annotated, so the unknowns are the per-group
+parameters $\theta_j = (\alpha_j, \lambda_j, \beta_j, \gamma_j, \sigma_{w,j}, \sigma_{e,j})$
+and the latent states $z_t$. We estimate them with EM: each iteration runs a
+KF/RTS pass (E-step) followed by a closed-form parameter update (M-step). The
+classical formulation [1, 2] — see also the pedagogic treatment in [3] — is
+written for a *single* time series, whereas here each group contributes roughly
+$N/2$ series, so the algorithm is modified to pool them.
+
+**Log-likelihood.** The complete-data log-likelihood for one individual is
+
+$$
+\begin{aligned}
+\log p(Y, Z \mid X, \theta)
+&= \underbrace{\sum_{t=1}^{T} \log p(z_t \mid z_{t-1}, x_t)}_{\text{state equation terms}}
+ + \underbrace{\sum_{t=1}^{T} \log p(y_t \mid z_t, x_t)}_{\text{observation equation terms}} \\[4pt]
+&= \sum_{t=1}^{T} \left[ -\frac{1}{2}\log(2\pi\sigma_w^2)
+   - \frac{(z_t - \alpha x_t - \lambda z_{t-1})^2}{2\sigma_w^2} \right] \\
+&\quad + \sum_{t=1}^{T} \left[ -\frac{1}{2}\log(2\pi\sigma_e^2)
+   - \frac{(y_t - \beta z_t - \gamma x_t)^2}{2\sigma_e^2} \right],
+\end{aligned}
+$$
+
+since both $z_t$ and $y_t$ are Gaussian. Patients are assumed independent, so the
+log-likelihood of a group is the sum over the individuals in it:
+
+$$
+\mathcal{L}(\theta_j) = \sum_{\{n \,:\, c_n = j\}} \sum_{t=1}^{T}
+\Big( \log p(z^{(n)}_t \mid z^{(n)}_{t-1}, x^{(n)}_t)
+    + \log p(y^{(n)}_t \mid z^{(n)}_t, x^{(n)}_t) \Big).
+$$
+
+Because $z_t$ is unobserved, the M-step maximises the expectation of this
+quantity under the smoothing posterior $p(Z \mid Y, X, \theta^{\text{old}})$:
+
+$$
+Q(\theta_j \mid \theta_j^{\text{old}})
+= \mathbb{E}_{Z \mid Y, X, \theta_j^{\text{old}}}\!\left[ \mathcal{L}(\theta_j) \right].
+$$
+
+#### EM algorithm
+
+Both steps use the same prior on the initial state that the data generators use:
+a trajectory starts from $z_0 = 0$ **exactly**, so
+$\mathbb{E}[z_0] = \mathbb{E}[z_0^2] = \mathbb{E}[z_1 z_0] = 0$ and $P_0 = 0$. The
+two steps must agree on this — an M-step that dropped the $t = 1$ transition
+would maximise a different model than the E-step scores, and the iteration would
+no longer be an EM (it could then *decrease* the log-likelihood).
+
+**E-step.** For each patient, run the Kalman filter from $(z_0 = 0, P_0 = 0)$ and
+then the RTS smoother, and accumulate the sufficient statistics
+
+$$
+\mathbb{E}[z_t] = \hat{z}_{t|T}, \qquad
+\mathbb{E}[z_t^2] = P_{t|T} + \hat{z}_{t|T}^2, \qquad
+\mathbb{E}[z_t z_{t-1}] = G_t P_{t|T} + \hat{z}_{t|T}\, \hat{z}_{t-1|T},
+$$
+
+where $G_t = \lambda P_{t-1|t-1} / P_{t|t-1}$ is the lag-one smoother gain and
+$\mathbb{E}[z_1 z_0] = 0$. The same pass returns the marginal log-likelihood
+$\log p(y_{1:T})$ from the innovations, which is what the convergence check
+monitors.
+
+**M-step.** Maximise the expectation $Q(\theta_j \mid \theta_j^{\text{old}})$ above
+to estimate the parameters. To ease notation, the subscript $j$ is dropped below.
+**All sums run over every transition $t = 1, \ldots, T$ and all $N$ patients in
+the group**, with the $t = 1$ term contributing through $z_0 = 0$.
+
+Differentiating $Q$ with respect to $\alpha$ and $\lambda$ and setting both
+equations to zero yields the $2 \times 2$ linear system
+
+$$
+\begin{bmatrix}
+\sum x_t^2 & \sum x_t\, \mathbb{E}[z_{t-1}] \\[4pt]
+\sum x_t\, \mathbb{E}[z_{t-1}] & \sum \mathbb{E}[z_{t-1}^2]
+\end{bmatrix}
+\begin{bmatrix} \alpha \\ \lambda \end{bmatrix}
+=
+\begin{bmatrix}
+\sum x_t\, \mathbb{E}[z_t] \\[4pt]
+\sum \mathbb{E}[z_t z_{t-1}]
+\end{bmatrix}.
+$$
+
+This is weighted least squares — regressing $\mathbb{E}[z_t]$ onto $x_t$ and
+$\mathbb{E}[z_{t-1}]$.
+
+After substituting the updated $\alpha$ and $\lambda$, the optimal variance is
+the mean squared residual of the state equation under the smoothed posterior:
+
+$$
+\sigma_w^2 = \frac{1}{NT} \sum_{n=1}^{N} \sum_{t=1}^{T}
+\mathbb{E}\!\left[ (z_t - \alpha x_t - \lambda z_{t-1})^2 \right],
+$$
+
+with the square expanded by linearity of expectation:
+
+$$
+\begin{aligned}
+\mathbb{E}\!\left[ (z_t - \alpha x_t - \lambda z_{t-1})^2 \right]
+&= \mathbb{E}[z_t^2]
+ - 2\alpha\, x_t\, \mathbb{E}[z_t]
+ - 2\lambda\, \mathbb{E}[z_t z_{t-1}] \\
+&\quad + \alpha^2 x_t^2
+ + 2\alpha\lambda\, x_t\, \mathbb{E}[z_{t-1}]
+ + \lambda^2\, \mathbb{E}[z_{t-1}^2].
+\end{aligned}
+$$
+
+The observation-equation parameters follow analogously, from the residual
+$y_t - \beta z_t - \gamma x_t$: the linear system
+
+$$
+\begin{bmatrix}
+\sum \mathbb{E}[z_t^2] & \sum x_t\, \mathbb{E}[z_t] \\[4pt]
+\sum x_t\, \mathbb{E}[z_t] & \sum x_t^2
+\end{bmatrix}
+\begin{bmatrix} \beta \\ \gamma \end{bmatrix}
+=
+\begin{bmatrix}
+\sum y_t\, \mathbb{E}[z_t] \\[4pt]
+\sum y_t\, x_t
+\end{bmatrix},
+$$
+
+followed by
+
+$$
+\sigma_e^2 = \frac{1}{NT} \sum_{n=1}^{N} \sum_{t=1}^{T}
+\mathbb{E}\!\left[ (y_t - \beta z_t - \gamma x_t)^2 \right].
+$$
+
+Both variances are floored at $10^{-6}$ before the square root, so a collapsing
+noise estimate cannot divide by zero on the next filter pass.
+
+### Phase 2 — classification
+
+For each patient $n$:
+
+1. Run the Kalman filter to infer $z_{1:T}$ under **both** models, $c_n = 0$ and
+   $c_n = 1$, accumulating the marginal likelihood $p^j(y_{1:T})$ of each.
+2. Infer $c_n$ from those marginal likelihoods. Under a uniform prior the
+   normalised marginal likelihood *is* the class probability,
+
+   $$
+   \mathbb{P}(c_n = 1 \mid y_{1:T})
+   = \frac{p^1(y_{1:T})}{p^0(y_{1:T}) + p^1(y_{1:T})},
+   $$
+
+   and with a prior $p_1(c_n)$ available,
+
+   $$
+   \mathbb{P}(c_n = 1 \mid y_{1:T})
+   = \frac{p^1(y_{1:T})\, p_1(c_n)}
+          {p^1(y_{1:T})\, p_1(c_n) + p^0(y_{1:T})\, (1 - p_1(c_n))}.
+   $$
+3. Active selection of $x_{t+1}$ — phase 3 below (white noise is the placeholder
+   baseline).
+
+One step ahead, the same identity in terms of the predicted observation is
+
+$$
+\mathbb{P}(c_n = 1 \mid \hat{y}_{1:t+1})
+= \frac{p^1(\hat{y}^1_{t+1}, y_{1:t})}
+       {p^0(\hat{y}^0_{t+1}, y_{1:t}) + p^1(\hat{y}^1_{t+1}, y_{1:t})},
+$$
+
+where $\hat{y}^j_{t+1}$ is the estimate of $y_{t+1}$ under the assumption that the
+patient belongs to group $j$.
+
+### Phase 3 — active sampling
+
+#### Entropy minimisation
+
+Choosing the probe by active sampling requires the expected posterior entropy
+
+$$
+\mathbb{E}_{y_t \sim p(y_t \mid x_t)}\!\left[ H(c \mid x_t, y_t) \right]
+$$
+
+at each time step, where $H$ is the conditional Shannon entropy. Several policies
+follow from it; we take the next action to be the one leaving the class posterior
+as sharp as possible, i.e. **minimum expected entropy**:
+
+$$
+x_t^{*} = \arg\min_{x_t} \ \mathbb{E}_{y_t \sim p(y_t \mid x_t)}\!\left[ H(c \mid x_t, y_t) \right].
+$$
+
+The marginal distribution of $y_t$ is a mixture of Gaussians, so this expectation
+has no closed form and is approximated by Monte Carlo.
+
+**Algorithm 1 — active learning via entropy minimisation for SSMs**
+(`utils/monte_carlo_entropy_minimization.py`)
+
+**Input:** prior $P(c = 1 \mid y_{1:t-1})$, KF state estimates $\hat{z}^{(c)}_{t-1|t-1}$,
+KF variances $P^{(c)}_{t-1|t-1}$, sample size $N$, candidate inputs $\mathcal{X}$.
+
+1. Compute the predictive variance for each group $c \in \{0, 1\}$:
+   $$S^{(c)}_{t|t-1} \gets \beta_c^2 \big( \lambda_c^2 P^{(c)}_{t-1|t-1} + \sigma_{w,c}^2 \big) + \sigma_{e,c}^2.$$
+2. For each candidate $x_t \in \mathcal{X}$:
+   1. Compute the predictive mean for each group $c \in \{0, 1\}$:
+      $$\hat{y}^{(c)}_{t|t-1} \gets (\beta_c \alpha_c + \gamma_c)\, x_t + \beta_c \lambda_c \hat{z}^{(c)}_{t-1|t-1}.$$
+   2. Draw $N$ samples $\{y^{(s)}_t\}_{s=1}^{N}$ from the mixture
+      $p(y_t \mid x_t, y_{1:t-1})$ — for $s = 1, \dots, N$:
+      sample $c^{(s)} \sim \text{Bernoulli}\big( P(c = 1 \mid y_{1:t-1}) \big)$, then
+      $y^{(s)}_t \sim \mathcal{N}\big( \hat{y}^{(c^{(s)})}_{t|t-1},\, S^{(c^{(s)})}_{t|t-1} \big)$.
+   3. Evaluate the Shannon entropy of each sample — for $s = 1, \dots, N$:
+      - $$p(y^{(s)}_t \mid x_t, y_{1:t-1}, c) = \frac{1}{\sqrt{2\pi S^{(c)}_{t|t-1}}} \exp\!\left( -\frac{(y^{(s)}_t - \hat{y}^{(c)}_{t|t-1})^2}{2 S^{(c)}_{t|t-1}} \right), \quad c \in \{0, 1\};$$
+      - $$P(c = 1 \mid x_t, y^{(s)}_t, y_{1:t-1}) = \frac{p(y^{(s)}_t \mid x_t, y_{1:t-1}, c = 1)\, P(c = 1 \mid y_{1:t-1})}{\sum_{c'} p(y^{(s)}_t \mid x_t, y_{1:t-1}, c')\, P(c' \mid y_{1:t-1})};$$
+      - $$H^{(s)} \gets -\sum_{c \in \{0,1\}} P(c \mid x_t, y^{(s)}_t, y_{1:t-1}) \ln P(c \mid x_t, y^{(s)}_t, y_{1:t-1}).$$
+   4. Approximate the expected entropy: $\bar{H}_x \gets \frac{1}{N} \sum_{s=1}^{N} H^{(s)}$.
+
+**Output:** the selected input $x_t^{*} = \arg\min_{x_t \in \mathcal{X}} \bar{H}_x$.
+
+#### Mutual information
+
+An alternative is to maximise the mutual information $I(c; y_t \mid x_t)$ between
+the latent treatment group and the future outcome, i.e. the action with the
+largest expected reduction in the Shannon entropy of $c$:
+
+$$
+x_t^{*} = \arg\max_{x_t} \Big[ H(y_t \mid x_t) - \mathbb{E}_{c \sim P(c)}\big[ H(y_t \mid x_t, c) \big] \Big],
+$$
+
+where $H(y_t \mid \cdot)$ is differential entropy. The second term is an
+expectation of entropies of pure Gaussians and simplifies analytically to
+$\frac{1}{2} \sum_c P(c) \ln(2\pi e \sigma_c^2)$. The total predictive entropy
+$H(y_t \mid x_t)$ has no closed form — $y_t$ is marginally a mixture of Gaussians
+— so it is again approximated by sampling the predictive mixture at each
+candidate $x_t$.
+
+**Algorithm 2 — active learning via mutual information for SSMs**
+(`utils/monte_carlo_mutual_information.py`)
+
+**Input:** prior $P(c = 1 \mid y_{1:t-1})$, KF state estimates $\hat{z}^{(c)}_{t-1|t-1}$,
+KF variances $P^{(c)}_{t-1|t-1}$, sample size $N$, candidate inputs $\mathcal{X}$.
+
+1. Compute the predictive variance for each group $c \in \{0, 1\}$:
+   $$S^{(c)}_{t|t-1} \gets \beta_c^2 \big( \lambda_c^2 P^{(c)}_{t-1|t-1} + \sigma_{w,c}^2 \big) + \sigma_{e,c}^2.$$
+2. Compute the analytic noise entropy:
+   $$H_{\text{noise}} \gets \frac{1}{2} \sum_{c \in \{0,1\}} P(c \mid y_{1:t-1}) \ln\!\big( 2\pi e\, S^{(c)}_{t|t-1} \big).$$
+3. For each candidate $x_t \in \mathcal{X}$:
+   1. Compute the predictive mean for each group $c \in \{0, 1\}$:
+      $$\hat{y}^{(c)}_{t|t-1} \gets (\beta_c \alpha_c + \gamma_c)\, x_t + \beta_c \lambda_c \hat{z}^{(c)}_{t-1|t-1}.$$
+   2. Draw $N$ samples $\{y^{(s)}_t\}_{s=1}^{N}$ from the mixture
+      $p(y_t \mid x_t, y_{1:t-1})$ — for $s = 1, \dots, N$:
+      sample $c^{(s)} \sim \text{Bernoulli}\big( P(c = 1 \mid y_{1:t-1}) \big)$, then
+      $y^{(s)}_t \sim \mathcal{N}\big( \hat{y}^{(c^{(s)})}_{t|t-1},\, S^{(c^{(s)})}_{t|t-1} \big)$.
+   3. Evaluate the full mixture density at each sample, $s = 1, \dots, N$:
+      $$p(y^{(s)}_t \mid x_t, y_{1:t-1}) \gets \sum_{c \in \{0,1\}} P(c \mid y_{1:t-1})\, \mathcal{N}\big( y^{(s)}_t \mid \hat{y}^{(c)}_{t|t-1}, S^{(c)}_{t|t-1} \big).$$
+   4. Approximate the predictive entropy:
+      $\hat{H}_x \gets -\frac{1}{N} \sum_{s=1}^{N} \ln p(y^{(s)}_t \mid x_t, y_{1:t-1})$.
+   5. Estimated mutual information: $I_x \gets \hat{H}_x - H_{\text{noise}}$.
+
+**Output:** the selected input $x_t^{*} = \arg\max_{x_t \in \mathcal{X}} I_x$.
+
+### References
+
+1. R. H. Shumway and D. S. Stoffer, *An approach to time series smoothing and
+   forecasting using the EM algorithm*, 1982.
+2. S. Särkkä, *Bayesian Filtering and Smoothing* — appendix (and Ch. 13).
+3. V. Elvira and É. Chouzenoux, *GraphEM*, 2022.
+4. B. Settles, *Active Learning Literature Survey*, 2009.
+
 ## Running it
 
 Conda env `hyperparameters` (Python 3.12.6; needs numpy, scipy, scikit-learn,
