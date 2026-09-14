@@ -39,55 +39,11 @@ identify the group as fast as possible.
 
 ## Method
 
-### Phase 1 — training
-
-The group labels $c_n$ are annotated, so the unknowns are the per-group
-parameters $\theta_j = (\alpha_j, \lambda_j, \beta_j, \gamma_j, \sigma_{w,j}, \sigma_{e,j})$
-and the latent states $z_t$. We estimate them with EM: each iteration runs a
-KF/RTS pass (E-step) followed by a closed-form parameter update (M-step). The
-classical formulation [1, 2] — see also the pedagogic treatment in [3] — is
-written for a *single* time series, whereas here each group contributes roughly
-$N/2$ series, so the algorithm is modified to pool them.
-
-**Log-likelihood.** The complete-data log-likelihood for one individual is
-
-$$
-\begin{aligned}
-\log p(Y, Z \mid X, \theta)
-&= \underbrace{\sum_{t=1}^{T} \log p(z_t \mid z_{t-1}, x_t)}_{\text{state equation terms}}
- + \underbrace{\sum_{t=1}^{T} \log p(y_t \mid z_t, x_t)}_{\text{observation equation terms}} \\[4pt]
-&= \sum_{t=1}^{T} \left[ -\frac{1}{2}\log(2\pi\sigma_w^2)
-   - \frac{(z_t - \alpha x_t - \lambda z_{t-1})^2}{2\sigma_w^2} \right] \\
-&\quad + \sum_{t=1}^{T} \left[ -\frac{1}{2}\log(2\pi\sigma_e^2)
-   - \frac{(y_t - \beta z_t - \gamma x_t)^2}{2\sigma_e^2} \right],
-\end{aligned}
-$$
-
-since both $z_t$ and $y_t$ are Gaussian. Patients are assumed independent, so the
-log-likelihood of a group is the sum over the individuals in it:
-
-$$
-\mathcal{L}(\theta_j) = \sum_{\{n \,:\, c_n = j\}} \sum_{t=1}^{T}
-\Big( \log p(z^{(n)}_t \mid z^{(n)}_{t-1}, x^{(n)}_t)
-    + \log p(y^{(n)}_t \mid z^{(n)}_t, x^{(n)}_t) \Big).
-$$
-
-Because $z_t$ is unobserved, the M-step maximises the expectation of this
-quantity under the smoothing posterior $p(Z \mid Y, X, \theta^{\text{old}})$:
-
-$$
-Q(\theta_j \mid \theta_j^{\text{old}})
-= \mathbb{E}_{Z \mid Y, X, \theta_j^{\text{old}}}\!\left[ \mathcal{L}(\theta_j) \right].
-$$
-
-#### EM algorithm
+### Phase 1 -- EM algorithm
 
 Both steps use the same prior on the initial state that the data generators use:
 a trajectory starts from $z_0 = 0$ **exactly**, so
-$\mathbb{E}[z_0] = \mathbb{E}[z_0^2] = \mathbb{E}[z_1 z_0] = 0$ and $P_0 = 0$. The
-two steps must agree on this — an M-step that dropped the $t = 1$ transition
-would maximise a different model than the E-step scores, and the iteration would
-no longer be an EM (it could then *decrease* the log-likelihood).
+$\mathbb{E}[z_0] = \mathbb{E}[z_0^2] = \mathbb{E}[z_1 z_0] = 0$ and $P_0 = 0$.
 
 **E-step.** For each patient, run the Kalman filter from $(z_0 = 0, P_0 = 0)$ and
 then the RTS smoother, and accumulate the sufficient statistics
@@ -175,44 +131,19 @@ $$
 Both variances are floored at $10^{-6}$ before the square root, so a collapsing
 noise estimate cannot divide by zero on the next filter pass.
 
-### Phase 2 — classification
+### Phase 2 -- inference
 
 For each patient $n$:
 
 1. Run the Kalman filter to infer $z_{1:T}$ under **both** models, $c_n = 0$ and
    $c_n = 1$, accumulating the marginal likelihood $p^j(y_{1:T})$ of each.
 2. Infer $c_n$ from those marginal likelihoods. Under a uniform prior the
-   normalised marginal likelihood *is* the class probability,
+   normalised marginal likelihood *is* the class probability
 
-   $$
-   \mathbb{P}(c_n = 1 \mid y_{1:T})
-   = \frac{p^1(y_{1:T})}{p^0(y_{1:T}) + p^1(y_{1:T})},
-   $$
-
-   and with a prior $p_1(c_n)$ available,
-
-   $$
-   \mathbb{P}(c_n = 1 \mid y_{1:T})
-   = \frac{p^1(y_{1:T})\, p_1(c_n)}
-          {p^1(y_{1:T})\, p_1(c_n) + p^0(y_{1:T})\, (1 - p_1(c_n))}.
-   $$
-3. Active selection of $x_{t+1}$ — phase 3 below (white noise is the placeholder
-   baseline).
-
-One step ahead, the same identity in terms of the predicted observation is
-
-$$
-\mathbb{P}(c_n = 1 \mid \hat{y}_{1:t+1})
-= \frac{p^1(\hat{y}^1_{t+1}, y_{1:t})}
-       {p^0(\hat{y}^0_{t+1}, y_{1:t}) + p^1(\hat{y}^1_{t+1}, y_{1:t})},
-$$
-
-where $\hat{y}^j_{t+1}$ is the estimate of $y_{t+1}$ under the assumption that the
-patient belongs to group $j$.
 
 ### Phase 3 — active sampling
 
-#### Entropy minimisation
+#### Entropy minimization
 
 Choosing the probe by active sampling requires the expected posterior entropy
 
