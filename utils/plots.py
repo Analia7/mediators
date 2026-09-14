@@ -202,6 +202,7 @@ def plot_trajectories(
     sample_indices=None,
     group_labels=None,
     estimated_params=None,
+    rows=("z", "y"),
     xlabel="Time step",
     title=None,
     subtitle=None,
@@ -264,6 +265,14 @@ def plot_trajectories(
              "sigma_e": .9}, 1: {...}}.
         `sigma_w` / `sigma_e` are optional; without them the predictive band is
         omitted. Defaults to None — ground truth only, no predictions.
+    rows : sequence of {"z", "y"}
+        Which series get a row, in the order given. Defaults to both. Pass a
+        single one (e.g. `rows=("z",)`) to export that panel on its own: it is
+        redrawn at its own figure size rather than cropped out of the pair, so
+        the type and line weights stay at their intended size instead of being
+        scaled by whatever the crop is reproduced at. The column headings, the
+        legend and the direct labels follow the top row, so a one-row figure is
+        a complete figure and not a fragment of one.
     xlabel : str
         X-axis label (shown on the bottom row only).
     title : str, optional
@@ -296,11 +305,19 @@ def plot_trajectories(
 
     show_pred = bool(estimated_params)
 
+    rows = tuple(rows)
+    if not rows or any(r not in ("z", "y") for r in rows):
+        raise ValueError(f'rows must be a non-empty selection from ("z", "y"); '
+                         f"got {rows!r}")
+    n_rows = len(rows)
+
     if figsize is None:
-        figsize = (5.6 * n_cols + 1.0, 5.4)
+        # Per-row height plus a fixed header allowance, so one row comes out as
+        # one row rather than as a two-row figure stretched to fill the space.
+        figsize = (5.6 * n_cols + 1.0, 2.5 * n_rows + 0.4)
 
     fig, axes = plt.subplots(
-        2, n_cols, figsize=figsize, sharex=True, sharey="row", squeeze=False
+        n_rows, n_cols, figsize=figsize, sharex=True, sharey="row", squeeze=False
     )
 
     pending_labels = []
@@ -314,7 +331,7 @@ def plot_trajectories(
             else group_indices[0]
         )
 
-        ax_z, ax_y = axes[0][col], axes[1][col]
+        row_axes = {name: axes[r][col] for r, name in enumerate(rows)}
 
         params = estimated_params.get(group) if show_pred else None
         if params is not None:
@@ -338,10 +355,13 @@ def plot_trajectories(
             Z_mean = Z_sd = Y_mean = Y_sd = None
             log_lik_z = log_lik_y = None
 
-        for symbol, ax, actual, mean, sd, log_lik in (
-            ("z", ax_z, Z[idx], Z_mean, Z_sd, log_lik_z),
-            ("y", ax_y, Y[idx], Y_mean, Y_sd, log_lik_y),
-        ):
+        panels = {
+            "z": (Z[idx], Z_mean, Z_sd, log_lik_z),
+            "y": (Y[idx], Y_mean, Y_sd, log_lik_y),
+        }
+        for symbol in rows:
+            ax = row_axes[symbol]
+            actual, mean, sd, log_lik = panels[symbol]
             if mean is not None and np.any(sd > 0):
                 # A wash, not a saturated block: the actual line stays readable
                 # where it runs through the band, which is most of the time.
@@ -362,19 +382,28 @@ def plot_trajectories(
                               ec="none", alpha=0.85),
                 )
 
-        # Direct labels supplement the legend, on the first column's latent
+        # Direct labels supplement the legend, on the first column's top
         # panel only — one clean instance beats a label in every panel. They go
         # at the time step where the two curves are furthest apart, so they need
         # no collision handling between them. Deferred until the y-limits are
         # final, because which side of its curve a label can sit on depends on
         # how much room is left there.
-        if col == 0 and Z_mean is not None:
-            gap = Z[idx] - Z_mean
-            t_star = int(np.argmax(np.abs(gap)))
+        top_actual, top_mean, _, _ = panels[rows[0]]
+        if col == 0 and top_mean is not None:
+            gap = top_actual - top_mean
+            # Where the curves are furthest apart, but searched over the middle
+            # of the series only. The global maximum is often the last step,
+            # which puts the label hard against the panel edge; the middle band
+            # keeps it clear of both ends while still landing somewhere the two
+            # curves are separated enough for the label to be unambiguous.
+            lo_t, hi_t = int(0.35 * T), int(0.65 * T)
+            hi_t = max(hi_t, lo_t + 1)          # a short series still has a window
+            t_star = lo_t + int(np.argmax(np.abs(gap[lo_t:hi_t])))
             actual_is_above = gap[t_star] > 0
+            ax_top = row_axes[rows[0]]
             pending_labels = [
-                (ax_z, t_star, Z[idx][t_star], "Actual", actual_is_above),
-                (ax_z, t_star, Z_mean[t_star], "Predicted", not actual_is_above),
+                (ax_top, t_star, top_actual[t_star], "Actual", actual_is_above),
+                (ax_top, t_star, top_mean[t_star], "Predicted", not actual_is_above),
             ]
 
         heading = (
@@ -392,11 +421,12 @@ def plot_trajectories(
             )
             if verdict is not None:
                 heading += " (correct)" if verdict else " (incorrect)"
-        ax_z.set_title(heading, fontsize=11, color=_INK_PRIMARY, loc="left", pad=8)
+        row_axes[rows[0]].set_title(heading, fontsize=11, color=_INK_PRIMARY,
+                                    loc="left", pad=8)
 
     # --- chrome: recessive grid, a zero rule, ink-token text, two spines
-    row_labels = ("Latent  $z_t$", "Observation  $y_t$")
-    for row in range(2):
+    row_labels = {"z": "Latent  $z_t$", "y": "Observation  $y_t$"}
+    for row, name in enumerate(rows):
         for col in range(n_cols):
             ax = axes[row][col]
             ax.set_axisbelow(True)
@@ -411,9 +441,9 @@ def plot_trajectories(
                 ax.spines[side].set_color(_AXIS)
                 ax.spines[side].set_linewidth(0.8)
             if col == 0:
-                ax.set_ylabel(row_labels[row], fontsize=10.5,
+                ax.set_ylabel(row_labels[name], fontsize=10.5,
                               color=_INK_SECONDARY, labelpad=8)
-            if row == 1:
+            if row == n_rows - 1:
                 ax.set_xlabel(xlabel, fontsize=10.5, color=_INK_SECONDARY,
                               labelpad=6)
 
@@ -463,6 +493,8 @@ def plot_trajectories(
     # panel would land outside it, and only now — after tight_layout has settled
     # the panel geometry — is there a panel height to measure that against.
     _LEAD_PT = 16.0        # leader length
+    _LABEL_PT = 9.0        # label type size; the width estimate below tracks it
+    _CHAR_EM = 0.62        # mean advance width of the sans face, in em
     for ax, t_star, value, text, up in pending_labels:
         lo, hi = ax.get_ylim()
         room_above = (hi - value) / (hi - lo)
@@ -478,13 +510,29 @@ def plot_trajectories(
             # park it on top of the other curve — the legend still carries
             # identity, and a label pointing at the wrong line is worse than none.
             continue
+
+        # The horizontal twin of the fits_up / fits_down test: t_star is the step
+        # where the curves diverge most, and that is often the last one, where a
+        # centred label overhangs the panel and is clipped by the figure edge.
+        # Anchor it to whichever edge keeps the whole string inside instead.
+        x_lo, x_hi = ax.get_xlim()
+        panel_w_pt = ax.get_position().width * fig.get_figwidth() * 72.0
+        half_pt = 0.5 * _CHAR_EM * _LABEL_PT * len(text)
+        at_pt = ((t_star - x_lo) / (x_hi - x_lo)) * panel_w_pt if x_hi > x_lo else 0.0
+        if at_pt + half_pt > panel_w_pt:
+            ha = "right"
+        elif at_pt - half_pt < 0:
+            ha = "left"
+        else:
+            ha = "center"
+
         ax.annotate(
             text,
             xy=(t_star, value),
             xytext=(0, _LEAD_PT if up else -_LEAD_PT),
             textcoords="offset points",
-            ha="center", va="bottom" if up else "top",
-            fontsize=9, color=_INK_SECONDARY, zorder=6,
+            ha=ha, va="bottom" if up else "top",
+            fontsize=_LABEL_PT, color=_INK_SECONDARY, zorder=6,
             bbox=dict(boxstyle="round,pad=0.18", fc="white", ec="none",
                       alpha=0.8),
             # A leader, not an arrow: the two curves run close together, so the
