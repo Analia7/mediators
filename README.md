@@ -1,4 +1,4 @@
-# mediators — Active Discovery of Latent Dynamic Mediators
+# Active Causal Discovery of Latent Dynamic Mediators
 
 Each patient `n` has an input signal `x_t`, an observation `y_t`, and a hidden
 treatment-group label `c_n ∈ {0, 1}`. The group determines *which causal pathway*
