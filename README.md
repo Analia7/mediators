@@ -171,17 +171,16 @@ $$
 The marginal distribution of $y_t$ is a mixture of Gaussians, so this expectation
 has no closed form and is approximated by Monte Carlo.
 
-**Algorithm 1 — active learning via entropy minimization for SSMs**
+**Algorithm 1: Active Learning via Entropy Minimization for SSMs**
 (`utils/monte_carlo_entropy_minimization.py`)
 
-**Input:** prior $P(c = 1 \mid y_{1:t-1})$, KF state estimates $\hat{z}^{(c)}_{t-1|t-1}$,
-KF variances $P^{(c)}_{t-1|t-1}$, sample size $N$, candidate inputs $\mathcal{X}$.
+**Input:** prior $P(c = 1 \mid y_{1:t-1})$, KF state estimates, KF variances, sample size $N$, candidate inputs $\mathcal{X}$.
 
 1. Compute the predictive variance for each group $c \in \{0, 1\}$:
 
-   $$
+   ```math
    S^{(c)}_{t|t-1} \gets \beta_c^2 \left( \lambda_c^2 P^{(c)}_{t-1|t-1} + \sigma_{w,c}^2 \right) + \sigma_{e,c}^2.
-   $$
+   ```
 
 2. For each candidate $x_t \in \mathcal{X}$ (steps 2–6), compute the predictive
    mean for each group $c \in \{0, 1\}$:
