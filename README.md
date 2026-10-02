@@ -190,6 +190,7 @@ S^{(c)}_{t|t-1} \gets \beta_c^2 \left( \lambda_c^2 P^{(c)}_{t-1|t-1} + \sigma_{w
 ```
 
 3. Draw $N$ samples $`\{y^{(s)}_t\}_{s=1}^{N}`$ from the mixture $p(y_t \mid x_t, y_{1:t-1})$: for $s = 1, \ldots, N$.
+
    Sample $c^{(s)} \sim \mathrm{Bernoulli}\left( P(c = 1 \mid y_{1:t-1}) \right)$ and then
 ```math
    y^{(s)}_t \sim \mathcal{N}\left( \hat{y}^{(c^{(s)})}_{t|t-1},\, S^{(c^{(s)})}_{t|t-1} \right).
@@ -212,7 +213,10 @@ S^{(c)}_{t|t-1} \gets \beta_c^2 \left( \lambda_c^2 P^{(c)}_{t-1|t-1} + \sigma_{w
 ```
 
 6. Approximate the expected entropy for this candidate:
-   $\bar{H}_x \gets \frac{1}{N} \sum_{s=1}^{N} H^{(s)}$.
+
+```math
+\bar{H}_x \gets \frac{1}{N} \sum_{s=1}^{N} H^{(s)}.
+```
 
 **Output:** the selected input $x_t^{*} = \arg\min_{x_t \in \mathcal{X}} \bar{H}_x$.
 
