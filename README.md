@@ -45,7 +45,8 @@ Both steps use the same prior on the initial state that the data generators use:
 a trajectory starts from $z_0 = 0$ **exactly**, so
 $\mathbb{E}[z_0] = \mathbb{E}[z_0^2] = \mathbb{E}[z_1 z_0] = 0$ and $P_0 = 0$.
 
-**E-step.** For each patient, run the Kalman filter from $(z_0 = 0, P_0 = 0)$ and
+#### E-step.
+For each patient, run the Kalman filter from $(z_0 = 0, P_0 = 0)$ and
 then the RTS smoother, and accumulate the sufficient statistics
 
 $$
@@ -62,7 +63,8 @@ $\log p(y_{1:T})$ from the innovations. The group log-likelihood is the sum of a
 L(\theta_j) = \sum_{\{n : c = j\}} \sum_{t=1}^{T} \Big( \underbrace{\log p(z_t \mid z_{t-1}, x_t)}_{\text{state equation terms}} + \underbrace{\log p(y_t \mid z_t, x_t)}_{\text{observation equation terms}} \Big)
 ```
 
-**M-step.** Maximize the expected complete-data log-likelihood 
+#### M-step. 
+Maximize the expected complete-data log-likelihood 
 
 ```math
 Q(\theta \mid \theta^{\text{old}}) = \mathbb{E}_{Z \mid Y, X, \theta^{\text{old}}}\left[ L(\theta_j) \right]
@@ -87,7 +89,7 @@ equations to zero yields the $2 \times 2$ linear system
 \end{bmatrix}.
 ```
 
-This is weighted least squares — regressing $\mathbb{E}[z_t]$ onto $x_t$ and
+This is weighted least squares. That is, regressing $\mathbb{E}[z_t]$ onto $x_t$ and
 $\mathbb{E}[z_{t-1}]$.
 
 After substituting the updated $\alpha$ and $\lambda$, the optimal variance is
@@ -130,10 +132,10 @@ $y_t - \beta z_t - \gamma x_t$: the linear system
 
 followed by
 
-$$
+```math
 \sigma_e^2 = \frac{1}{NT} \sum_{n=1}^{N} \sum_{t=1}^{T}
 \mathbb{E}\!\left[ (y_t - \beta z_t - \gamma x_t)^2 \right].
-$$
+```
 
 Both variances are floored at $10^{-6}$ before the square root, so a collapsing
 noise estimate cannot divide by zero on the next filter pass.
