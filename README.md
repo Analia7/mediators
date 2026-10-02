@@ -56,9 +56,17 @@ $$
 
 where $G_t = \lambda P_{t-1|t-1} / P_{t|t-1}$ is the lag-one smoother gain and
 $\mathbb{E}[z_1 z_0] = 0$. The same pass returns the marginal log-likelihood
-$\log p(y_{1:T})$ from the innovations.
+$\log p(y_{1:T})$ from the innovations. The group log-likelihood is the sum of all the individual log-likelihoods of patients belonging to that group:
 
-**M-step.** Maximize the expected complete-data log-likelihood $Q(\theta_j \mid \theta_j^{\text{old}})$
+```math
+L(\theta_j) = \sum_{\{n : c = j\}} \sum_{t=1}^{T} \Big( \underbrace{\log p(z_t \mid z_{t-1}, x_t)}_{\text{state equation terms}} + \underbrace{\log p(y_t \mid z_t, x_t)}_{\text{observation equation terms}} \Big)
+```
+
+**M-step.** Maximize the expected complete-data log-likelihood 
+
+```math
+Q(\theta \mid \theta^{\text{old}}) = \mathbb{E}_{Z \mid Y, X, \theta^{\text{old}}}\left[ L(\theta_j) \right]
+```
 to estimate the parameters. To ease notation, the subscript $j$ is dropped below.
 **All sums run over every transition $t = 1, \ldots, T$ and all $N$ patients in
 the group**, with the $t = 1$ term contributing through $z_0 = 0$.
