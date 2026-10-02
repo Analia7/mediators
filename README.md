@@ -174,7 +174,8 @@ has no closed form and is approximated by Monte Carlo.
 **Algorithm 1: Active Learning via Entropy Minimization for SSMs**
 (`utils/monte_carlo_entropy_minimization.py`)
 
-**Input:** prior $P(c = 1 \mid y_{1:t-1})$, KF state estimates, KF variances, sample size $N$, candidate inputs $\mathcal{X}$.
+**Input:** prior $P(c = 1 \mid y_{1:t-1})$, KF state estimates $`\hat{z}^{(c)}_{t-1|t-1}`$,
+KF variances $`P^{(c)}_{t-1|t-1}`$, sample size $N$, candidate inputs $\mathcal{X}$.
 
 1. Compute the predictive variance for each group $c \in \{0, 1\}$:
 
@@ -233,54 +234,57 @@ $$
 where $H(y_t \mid \cdot)$ is differential entropy. The second term is an
 expectation of entropies of pure Gaussians and simplifies analytically to
 $\frac{1}{2} \sum_c P(c) \ln(2\pi e \sigma_c^2)$. The total predictive entropy
-$H(y_t \mid x_t)$ has no closed form — $y_t$ is marginally a mixture of Gaussians
-— so it is again approximated by sampling the predictive mixture at each
+$H(y_t \mid x_t)$ has no closed form, as $y_t$ is marginally a mixture of Gaussians, so it is again approximated by sampling the predictive mixture at each
 candidate $x_t$.
 
-**Algorithm 2 — active learning via mutual information for SSMs**
+**Algorithm 2: Active Learning via Mutual Information for SSMs**
 (`utils/monte_carlo_mutual_information.py`)
 
-**Input:** prior $P(c = 1 \mid y_{1:t-1})$, KF state estimates $\hat{z}^{(c)}_{t-1|t-1}$,
-KF variances $P^{(c)}_{t-1|t-1}$, sample size $N$, candidate inputs $\mathcal{X}$.
+**Input:** prior $`P(c = 1 \mid y_{1:t-1})`$, KF state estimates $`\hat{z}^{(c)}_{t-1|t-1}`$,
+KF variances $`P^{(c)}_{t-1|t-1}`$, sample size $N$, candidate inputs $\mathcal{X}$.
 
 1. Compute the predictive variance for each group $c \in \{0, 1\}$:
 
-   $$
-   S^{(c)}_{t|t-1} \gets \beta_c^2 \left( \lambda_c^2 P^{(c)}_{t-1|t-1} + \sigma_{w,c}^2 \right) + \sigma_{e,c}^2.
-   $$
+```math
+S^{(c)}_{t|t-1} \gets \beta_c^2 \left( \lambda_c^2 P^{(c)}_{t-1|t-1} + \sigma_{w,c}^2 \right) + \sigma_{e,c}^2.
+```
 
 2. Compute the analytic noise entropy:
 
-   $$
+```math
    H_{\mathrm{noise}} \gets \frac{1}{2} \sum_{c \in \{0, 1\}} P(c \mid y_{1:t-1}) \ln \left( 2\pi e\, S^{(c)}_{t|t-1} \right).
-   $$
+```
 
 3. For each candidate $x_t \in \mathcal{X}$ (steps 3–6), compute the predictive
    mean for each group $c \in \{0, 1\}$:
 
-   $$
-   \hat{y}^{(c)}_{t|t-1} \gets (\beta_c \alpha_c + \gamma_c)\, x_t + \beta_c \lambda_c \hat{z}^{(c)}_{t-1|t-1}.
-   $$
+```math
+\hat{y}^{(c)}_{t|t-1} \gets (\beta_c \alpha_c + \gamma_c)\, x_t + \beta_c \lambda_c \hat{z}^{(c)}_{t-1|t-1}.
+```
 
-4. Draw $N$ samples $\{y^{(s)}_t\}_{s=1}^{N}$ from the mixture
-   $p(y_t \mid x_t, y_{1:t-1})$: for $s = 1, \ldots, N$, sample
+4. Draw $N$ samples $`\{y^{(s)}_t\}_{s=1}^{N}`$ from the mixture
+   $`p(y_t \mid x_t, y_{1:t-1})`$: for $s = 1, \ldots, N$.
+
+   Sample
    $c^{(s)} \sim \mathrm{Bernoulli}\left( P(c = 1 \mid y_{1:t-1}) \right)$ and then
-   $y^{(s)}_t \sim \mathcal{N}\left( \hat{y}^{(c^{(s)})}_{t|t-1},\, S^{(c^{(s)})}_{t|t-1} \right)$.
+```math
+y^{(s)}_t \sim \mathcal{N}\left( \hat{y}^{(c^{(s)})}_{t|t-1},\, S^{(c^{(s)})}_{t|t-1} \right).
+```
 
 5. Evaluate the full mixture density at each sample and average the log to get
    the predictive entropy:
 
-   $$
-   p(y^{(s)}_t \mid x_t, y_{1:t-1}) \gets \sum_{c \in \{0, 1\}} P(c \mid y_{1:t-1})\, \mathcal{N}\left( y^{(s)}_t \mid \hat{y}^{(c)}_{t|t-1},\, S^{(c)}_{t|t-1} \right),
-   $$
+```math
+p(y^{(s)}_t \mid x_t, y_{1:t-1}) \gets \sum_{c \in \{0, 1\}} P(c \mid y_{1:t-1})\, \mathcal{N}\left( y^{(s)}_t \mid \hat{y}^{(c)}_{t|t-1},\, S^{(c)}_{t|t-1} \right),
+```
 
-   $$
-   \hat{H}_x \gets - \frac{1}{N} \sum_{s=1}^{N} \ln p(y^{(s)}_t \mid x_t, y_{1:t-1}).
-   $$
+```math
+\hat{H}_x \gets - \frac{1}{N} \sum_{s=1}^{N} \ln p(y^{(s)}_t \mid x_t, y_{1:t-1}).
+```
 
 6. Estimated mutual information: $I_x \gets \hat{H}_x - H_{\mathrm{noise}}$.
 
-**Output:** the selected input $x_t^{*} = \arg\max_{x_t \in \mathcal{X}} I_x$.
+**Output:** the selected input $`x_t^{*} = \arg\max_{x_t \in \mathcal{X}} I_x`$.
 
 ### References
 
@@ -303,8 +307,7 @@ MPLBACKEND=Agg $PY -u experiment1_seed_sweep.py > results/experiment1_seed_sweep
 MPLBACKEND=Agg $PY -u experiment2_seed_sweep.py > results/experiment2_seed_sweep_log.txt 2>&1   # ~8 min
 ```
 
-All outputs land in `results/`. Everything there was generated after the
-correctness fixes; the pre-fix outputs have been deleted.
+All outputs land in `results/`.
 
 `experiment2.py` also logs the accuracy curves to `results/experiment2_<TAG>.csv`
 and prints a per-timestep table plus steps-to-threshold summary.
