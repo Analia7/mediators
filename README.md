@@ -320,8 +320,8 @@ another:
 
 | Component | Seed | Notes |
 |---|---|---|
-| Training / test data | `generate_synthetic_samples(seed=...)` | `(SEED, regime, 0)` train, `(SEED, regime, 1)` test — distinct per regime, and train ≠ test |
-| Patient `i`'s noise | `PatientSimulator(seed=i)` | Same realization for all policies — a *paired* comparison |
+| Training / test data | `generate_synthetic_samples(seed=...)` | `(SEED, regime, 0)` train, `(SEED, regime, 1)` test (distinct per regime, and train ≠ test) |
+| Patient `i`'s noise | `PatientSimulator(seed=i)` | Same realization for all policies (a *paired* comparison) |
 | Patient `i`'s probes | `run_patient_with_active_learning(seed=i)` | The `random` policy's `x` sequence |
 | Monte Carlo draws | derived from the same `seed` | One stream **per (patient, policy)** |
 
