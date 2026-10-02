@@ -140,7 +140,7 @@ followed by
 Both variances are floored at $10^{-6}$ before the square root, so a collapsing
 noise estimate cannot divide by zero on the next filter pass.
 
-### Phase 2 -- inference
+### Phase 2: Inference (Classification via Filtering)
 
 For each patient $n$:
 
@@ -150,15 +150,15 @@ For each patient $n$:
    normalized marginal likelihood *is* the class probability.
 
 
-### Phase 3 — active sampling
+### Phase 3: Filtering and Active Learning (via Active Sampling)
 
 #### Entropy minimization
 
 Choosing the probe by active sampling requires the expected posterior entropy
 
-$$
+```math
 \mathbb{E}_{y_t \sim p(y_t \mid x_t)}\!\left[ H(c \mid x_t, y_t) \right]
-$$
+```
 
 at each time step, where $H$ is the conditional Shannon entropy. Several policies
 follow from it; we take the next action to be the one leaving the class posterior
