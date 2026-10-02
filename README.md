@@ -10,7 +10,7 @@ state:        z_t = α_j x_t + λ_j z_{t-1} + w_t,    w ~ N(0, σ_w²)
 observation:  y_t = β_j z_t  + γ_j x_t     + e_t,   e ~ N(0, σ_e²)
 ```
 
-The project asks two questions: can we recover the group from `(x, y)` alone, and
+The project asks two questions: can we recover the group and unobserved mediator trajectory from `(x, y)` alone, and
 can *actively choosing* `x_t` identify it in fewer time steps than random dosing?
 
 ## Layout
