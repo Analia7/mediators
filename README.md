@@ -39,7 +39,7 @@ identify the group as fast as possible.
 
 ## Method
 
-### Phase 1 -- EM algorithm
+### Phase 1: Training using the EM algorithm
 
 Both steps use the same prior on the initial state that the data generators use:
 a trajectory starts from $z_0 = 0$ **exactly**, so
@@ -56,8 +56,7 @@ $$
 
 where $G_t = \lambda P_{t-1|t-1} / P_{t|t-1}$ is the lag-one smoother gain and
 $\mathbb{E}[z_1 z_0] = 0$. The same pass returns the marginal log-likelihood
-$\log p(y_{1:T})$ from the innovations, which is what the convergence check
-monitors.
+$\log p(y_{1:T})$ from the innovations.
 
 **M-step.** Maximize the expected complete-data log-likelihood $Q(\theta_j \mid \theta_j^{\text{old}})$
 to estimate the parameters. To ease notation, the subscript $j$ is dropped below.
@@ -67,7 +66,7 @@ the group**, with the $t = 1$ term contributing through $z_0 = 0$.
 Differentiating $Q$ with respect to $\alpha$ and $\lambda$ and setting both
 equations to zero yields the $2 \times 2$ linear system
 
-$$
+```math
 \begin{bmatrix}
 \sum x_t^2 & \sum x_t\, \mathbb{E}[z_{t-1}] \\
 \sum x_t\, \mathbb{E}[z_{t-1}] & \sum \mathbb{E}[z_{t-1}^2]
@@ -78,7 +77,7 @@ $$
 \sum x_t\, \mathbb{E}[z_t] \\
 \sum \mathbb{E}[z_t z_{t-1}]
 \end{bmatrix}.
-$$
+```
 
 This is weighted least squares — regressing $\mathbb{E}[z_t]$ onto $x_t$ and
 $\mathbb{E}[z_{t-1}]$.
