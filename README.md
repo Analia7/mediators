@@ -178,37 +178,42 @@ has no closed form and is approximated by Monte Carlo.
 
 1. Compute the predictive variance for each group $c \in \{0, 1\}$:
 
-   ```math
-   S^{(c)}_{t|t-1} \gets \beta_c^2 \left( \lambda_c^2 P^{(c)}_{t-1|t-1} + \sigma_{w,c}^2 \right) + \sigma_{e,c}^2.
-   ```
+```math
+S^{(c)}_{t|t-1} \gets \beta_c^2 \left( \lambda_c^2 P^{(c)}_{t-1|t-1} + \sigma_{w,c}^2 \right) + \sigma_{e,c}^2.
+```
 
 2. For each candidate $x_t \in \mathcal{X}$ (steps 2–6), compute the predictive
    mean for each group $c \in \{0, 1\}$:
 
-   ```math
-   \hat{y}^{(c)}_{t|t-1} \gets (\beta_c \alpha_c + \gamma_c)\, x_t + \beta_c \lambda_c \hat{z}^{(c)}_{t-1|t-1}.
-   ```
+```math
+\hat{y}^{(c)}_{t|t-1} \gets (\beta_c \alpha_c + \gamma_c)\, x_t + \beta_c \lambda_c \hat{z}^{(c)}_{t-1|t-1}.
+```
 
-3. Draw $N$ samples $\{y^{(s)}_t\}_{s=1}^{N}$ from the mixture
-   $p(y_t \mid x_t, y_{1:t-1})$: for $s = 1, \ldots, N$, sample
+3. Draw $N$ samples
+```math
+\{y^{(s)}_t\}_{s=1}^{N}
+```
+ from the mixture $p(y_t \mid x_t, y_{1:t-1})$: for $s = 1, \ldots, N$. Sample
    $c^{(s)} \sim \mathrm{Bernoulli}\left( P(c = 1 \mid y_{1:t-1}) \right)$ and then
-   $y^{(s)}_t \sim \mathcal{N}\left( \hat{y}^{(c^{(s)})}_{t|t-1},\, S^{(c^{(s)})}_{t|t-1} \right)$.
+```math
+   y^{(s)}_t \sim \mathcal{N}\left( \hat{y}^{(c^{(s)})}_{t|t-1},\, S^{(c^{(s)})}_{t|t-1} \right).
+```
 
 4. Evaluate each sample under both group models, $c \in \{0, 1\}$:
 
-   $$
+```math
    p(y^{(s)}_t \mid x_t, y_{1:t-1}, c) = \frac{1}{\sqrt{2\pi S^{(c)}_{t|t-1}}} \exp\left( -\frac{\left( y^{(s)}_t - \hat{y}^{(c)}_{t|t-1} \right)^2}{2 S^{(c)}_{t|t-1}} \right).
-   $$
+```
 
 5. Turn each into a posterior and take its Shannon entropy:
 
-   $$
+```math
    P(c = 1 \mid x_t, y^{(s)}_t, y_{1:t-1}) = \frac{p(y^{(s)}_t \mid x_t, y_{1:t-1}, c = 1)\, P(c = 1 \mid y_{1:t-1})}{\sum_{c'} p(y^{(s)}_t \mid x_t, y_{1:t-1}, c')\, P(c' \mid y_{1:t-1})},
-   $$
+```
 
-   $$
+```math
    H^{(s)} \gets - \sum_{c \in \{0, 1\}} P(c \mid x_t, y^{(s)}_t, y_{1:t-1}) \ln P(c \mid x_t, y^{(s)}_t, y_{1:t-1}).
-   $$
+```
 
 6. Approximate the expected entropy for this candidate:
    $\bar{H}_x \gets \frac{1}{N} \sum_{s=1}^{N} H^{(s)}$.
