@@ -246,7 +246,7 @@ KF variances $`P^{(c)}_{t-1|t-1}`$, sample size $N$, candidate inputs $\mathcal{
 1. Compute the predictive variance for each group $c \in \{0, 1\}$:
 
 ```math
-S^{(c)}_{t|t-1} \gets \beta_c^2 \left( \lambda_c^2 P^{(c)}_{t-1|t-1} + \sigma_{w,c}^2 \right) + \sigma_{e,c}^2.
+S_{t \mid t-1}^{(c)} \;\; \leftarrow \;\; \beta_c^{2} \,\bigg( \lambda_c^{2} \, P_{t-1 \mid t-1}^{(c)} \;+\; \sigma_{w,c}^{2} \bigg) \;+\; \sigma_{e,c}^{2}
 ```
 
 2. Compute the analytic noise entropy:
@@ -282,7 +282,7 @@ p(y^{(s)}_t \mid x_t, y_{1:t-1}) \gets \sum_{c \in \{0, 1\}} P(c \mid y_{1:t-1})
 \hat{H}_x \gets - \frac{1}{N} \sum_{s=1}^{N} \ln p(y^{(s)}_t \mid x_t, y_{1:t-1}).
 ```
 
-6. Estimated mutual information: $I_x \gets \hat{H}_x - H_{\mathrm{noise}}$.
+6. Estimated mutual information: $`I_x \gets \hat{H}_x - H_{\mathrm{noise}}`$.
 
 **Output:** the selected input $`x_t^{*} = \arg\max_{x_t \in \mathcal{X}} I_x`$.
 
