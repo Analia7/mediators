@@ -92,7 +92,7 @@ $$
 
 with the square expanded by linearity of expectation:
 
-$$
+```math
 \begin{aligned}
 \mathbb{E}\!\left[ (z_t - \alpha x_t - \lambda z_{t-1})^2 \right]
 &= \mathbb{E}[z_t^2]
@@ -102,12 +102,12 @@ $$
  + 2\alpha\lambda\, x_t\, \mathbb{E}[z_{t-1}]
  + \lambda^2\, \mathbb{E}[z_{t-1}^2].
 \end{aligned}
-$$
+```
 
 The observation-equation parameters follow analogously, from the residual
 $y_t - \beta z_t - \gamma x_t$: the linear system
 
-$$
+```math
 \begin{bmatrix}
 \sum \mathbb{E}[z_t^2] & \sum x_t\, \mathbb{E}[z_t] \\
 \sum x_t\, \mathbb{E}[z_t] & \sum x_t^2
@@ -118,7 +118,7 @@ $$
 \sum y_t\, \mathbb{E}[z_t] \\
 \sum y_t\, x_t
 \end{bmatrix},
-$$
+```
 
 followed by
 
