@@ -95,10 +95,10 @@ $\mathbb{E}[z_{t-1}]$.
 After substituting the updated $\alpha$ and $\lambda$, the optimal variance is
 the mean squared residual of the state equation under the smoothed posterior:
 
-$$
+```math
 \sigma_w^2 = \frac{1}{NT} \sum_{n=1}^{N} \sum_{t=1}^{T}
 \mathbb{E}\!\left[ (z_t - \alpha x_t - \lambda z_{t-1})^2 \right],
-$$
+```
 
 with the square expanded by linearity of expectation:
 
