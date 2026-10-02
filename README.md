@@ -178,9 +178,9 @@ has no closed form and is approximated by Monte Carlo.
 
 1. Compute the predictive variance for each group $c \in \{0, 1\}$:
 
-   ```math
-   S^{(c)}_{t|t-1} \gets \beta_c^2 \left( \lambda_c^2 P^{(c)}_{t-1|t-1} + \sigma_{w,c}^2 \right) + \sigma_{e,c}^2.
-   ```
+```math
+S^{(c)}_{t|t-1} \gets \beta_c^2 \left( \lambda_c^2 P^{(c)}_{t-1|t-1} + \sigma_{w,c}^2 \right) + \sigma_{e,c}^2.
+```
 
 2. For each candidate $x_t \in \mathcal{X}$ (steps 2–6), compute the predictive
    mean for each group $c \in \{0, 1\}$:
